@@ -13,6 +13,7 @@ import {
   REGIONS_FROM_ROUND, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX, DIAG_MIN_SHARE,
 } from './config.js';
 import { srvLat, dbLat } from './rules/latency.js';
+import { p95, addReason } from './rules/stats.js';
 
 // ============ Moteur de simulation v2 ============
 const REGION_NAMES = { eu: 'Paris', us: 'New York', asia: 'Tokyo' };
@@ -160,8 +161,6 @@ function receiversOf(S) {
   if (S.group && S.group.brick.alive) S.group.inst.forEach((x, k) => { if (x.alive && t >= x.readyAt) out.push({ id: 'auto' + k, cap: AUTO_INSTANCE_CAP, conns: AUTO_INSTANCE_CONNS, region: x.region, alive: true, kind: 'auto', inst: x }); });
   return out;
 }
-
-function addReason(o, k, v) { if (v > 0) o[k] = (o[k] || 0) + v; }
 
 function stepSim(S) {
   if (S.done) return null;
@@ -546,15 +545,6 @@ function useCard(S, name) {
   }
   if (ok) { S.cards[name]--; S.log.push({ t, msg: CARDS[name].name }); }
   return { ok, msg };
-}
-
-function p95(samples) {
-  const tot = samples.reduce((a, s) => a + s[1], 0);
-  if (!tot) return 0;
-  const sorted = [...samples].sort((a, b) => a[0] - b[0]);
-  let acc = 0;
-  for (const [lat, w] of sorted) { acc += w; if (acc >= tot * 0.95) return lat; }
-  return sorted[sorted.length - 1][0];
 }
 
 function resultOf(S) {
