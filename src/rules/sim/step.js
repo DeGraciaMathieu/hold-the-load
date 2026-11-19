@@ -1,5 +1,5 @@
 import {
-  DT, BASE_LAT, DIST, TTL, LB_LAT, RETRY_LAT, CACHE_LAT, QUEUE_LAT, OBJSTORE_LAT,
+  DT, BASE_LAT, DIST, TTL, LB_LAT, RETRY_LAT, CDN_LAT, CACHE_LAT, QUEUE_LAT, OBJSTORE_LAT, DIRECT_UPLOAD_LAT,
   STATIC_COST, UPLOAD_COST, SIGNED_UPLOAD_COST, PAY_WAIT_DIVISOR, STICKY_CAPACITY, API_DEFAULT_LAT,
   API_BAD_LAT, API_BAD_ERR, BREAKER_OPEN_AFTER, BREAKER_CLOSE_AFTER, TIMEOUT_SHORT, TIMEOUT_LONG,
   CACHE_WARMUP, STAMPEDE_LOAD, WAF_STRICT_BLOCKED, WAF_STRICT_BOTS_PASS, WAF_SOFT_BOTS_PASS, SESSION_LOSS_WINDOW,
@@ -97,7 +97,7 @@ export function stepSim(S) {
   // CDN
   const cdnAlive = !!(S.cdn && S.cdn.alive);
   let statIn = att.static;
-  if (cdnAlive) { okA('static', statIn, BASE_LAT + 15); statIn = 0; }
+  if (cdnAlive) { okA('static', statIn, BASE_LAT + CDN_LAT); statIn = 0; }
   // ---- étage serveurs
   const recv = receiversOf(S);
   tk.receivers = recv.length;
@@ -207,11 +207,11 @@ export function stepSim(S) {
         if (!objAlive) { failA(c, v, 'objDown'); continue; }
         okA(c, v, base + OBJSTORE_LAT + DIST[g][S.objstore.region]); D.jobs.upload += v; continue;
       }
-      okA(c, v, base * 2.5); continue;
+      okA(c, v, base * DIRECT_UPLOAD_LAT); continue;
     }
     if (c === 'pay') {
       if (brkOpen) {
-        if (queueAlive && wAlive > 0) { okA(c, v, base + 5); D.jobs.pay += v; }
+        if (queueAlive && wAlive > 0) { okA(c, v, base + QUEUE_LAT); D.jobs.pay += v; }
         else failA(c, v, 'apiDown');
         continue;
       }

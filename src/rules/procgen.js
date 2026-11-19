@@ -1,6 +1,7 @@
 import {
   CAMP_RPS_START, CAMP_RPS_GROWTH, REGIONS_CHANCE_ALL, REGIONS_CHANCE_LATE, REGIONS_FROM_ROUND,
-  GEN_DURATION, GEN_EVENT_FROM, GEN_EVENT_TO,
+  GEN_DURATION, GEN_EVENT_FROM, GEN_EVENT_TO, GEN_INCIDENT_LENGTH, GEN_API_SLOW_LAT, GEN_ATTACK_MULT,
+  GEN_SPIKE_LENGTH, GEN_SPIKE_K, GEN_RUSH_LENGTH, GEN_RUSH_READS_KEPT, GEN_RUSH_READS_TO_WRITE,
 } from '../config.js';
 import { EVENT_NAMES } from '../content/texts.js';
 import { mixOf, wave } from '../content/levels.js';
@@ -42,16 +43,16 @@ export function genLevel(R, round, opts = {}) {
     tags.push(EVENT_NAMES[type] + ' vers ' + t + ' s');
     if (type === 'crash') events.push({ type, t, target: 0 });
     if (type === 'cacheFlush') events.push({ type, t });
-    if (type === 'apiSlow') events.push({ type, from: t, to: t + 7, lat: 3000 });
-    if (type === 'attack') events.push({ type, from: t, to: t + 7, mult: 3 });
+    if (type === 'apiSlow') events.push({ type, from: t, to: t + GEN_INCIDENT_LENGTH, lat: GEN_API_SLOW_LAT });
+    if (type === 'attack') events.push({ type, from: t, to: t + GEN_INCIDENT_LENGTH, mult: GEN_ATTACK_MULT });
     if (type === 'regionDown') events.push({ type, t, region: 'primary' });
-    if (type === 'spike') spike = { from: t, to: t + 6, k: 1.8 };
-    if (type === 'writeRush') rush = { from: t, to: t + 5 };
+    if (type === 'spike') spike = { from: t, to: t + GEN_SPIKE_LENGTH, k: GEN_SPIKE_K };
+    if (type === 'writeRush') rush = { from: t, to: t + GEN_RUSH_LENGTH };
   }
   const base = wave(0.92, 0.08, 2 + R() * 2);
   const profile = spike ? (t => (t >= spike.from && t < spike.to ? spike.k : 1) * base(t)) : base;
   const mixFix = mixOf(m);
-  const mix = rush ? (t => (t >= rush.from && t < rush.to ? mixOf({ ...m, read: m.read * 0.3, write: m.write + m.read * 0.7 }) : mixFix)) : mixFix;
+  const mix = rush ? (t => (t >= rush.from && t < rush.to ? mixOf({ ...m, read: m.read * GEN_RUSH_READS_KEPT, write: m.write + m.read * GEN_RUSH_READS_TO_WRITE }) : mixFix)) : mixFix;
   const lvl = {
     id: opts.id || 'gen' + round, title: opts.title || 'Tour ' + round, bricks, sizes: has('autoscale') || opts.all,
     settingsAllowed: has('breaker') ? ['timeout', 'retries', 'shed'] : [],

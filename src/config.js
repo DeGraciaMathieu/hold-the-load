@@ -17,9 +17,11 @@ export const DB_LAT_MIN = 15; // ms
 export const LAT_SURGE = 3;
 export const LB_LAT = 2; // ms ajoutées par le load balancer
 export const RETRY_LAT = 300; // ms ajoutées par nouvel essai
+export const CDN_LAT = 15; // ms ajoutées à un fichier statique servi par le CDN
 export const CACHE_LAT = 2; // ms d'une lecture servie par le cache
 export const QUEUE_LAT = 5; // ms pour déposer une écriture en file
 export const OBJSTORE_LAT = 30; // ms d'un upload vers le stockage objet
+export const DIRECT_UPLOAD_LAT = 2.5; // sans stockage objet, un upload prend 2,5 × la latence de base
 
 // ---- Coût en capacité serveur d'une requête, par classe
 export const STATIC_COST = 0.5;
@@ -109,6 +111,14 @@ export const REGIONS_FROM_ROUND = 9;
 export const GEN_DURATION = 24; // s d'un tour généré
 export const GEN_EVENT_FROM = 6; // s, plus tôt qu'un incident puisse survenir
 export const GEN_EVENT_TO = 14; // s, plus tard qu'un incident puisse survenir
+export const GEN_INCIDENT_LENGTH = 7; // s d'API lente ou d'attaque de bots
+export const GEN_API_SLOW_LAT = 3000; // ms de l'API de paiement pendant qu'elle rame
+export const GEN_ATTACK_MULT = 3; // trafic de bots multiplié pendant une attaque
+export const GEN_SPIKE_LENGTH = 6; // s de pic de trafic
+export const GEN_SPIKE_K = 1.8; // trafic multiplié pendant le pic
+export const GEN_RUSH_LENGTH = 5; // s de ruée sur les paniers
+export const GEN_RUSH_READS_KEPT = 0.3; // part des lectures conservée pendant la ruée
+export const GEN_RUSH_READS_TO_WRITE = 0.7; // part des lectures devenue écritures pendant la ruée
 
 // ---- Affichage lié aux règles
 export const SPEED_FAST = 2; // vitesse de lecture d'un run au lancement (×2), ×1 sinon
