@@ -1,4 +1,7 @@
-import { CAMP_RPS_START, CAMP_RPS_GROWTH, REGIONS_CHANCE_ALL, REGIONS_CHANCE_LATE, REGIONS_FROM_ROUND } from '../config.js';
+import {
+  CAMP_RPS_START, CAMP_RPS_GROWTH, REGIONS_CHANCE_ALL, REGIONS_CHANCE_LATE, REGIONS_FROM_ROUND,
+  GEN_DURATION, GEN_EVENT_FROM, GEN_EVENT_TO,
+} from '../config.js';
 import { EVENT_NAMES } from '../content/texts.js';
 import { mixOf, wave } from '../content/levels.js';
 
@@ -20,7 +23,7 @@ export function genLevel(R, round, opts = {}) {
   const m = { static: has('cdn') ? between(0.15, 0.45) : 0, write: between(0.05, 0.15), pay: has('breaker') ? between(0.05, 0.15) : 0,
     reco: has('autoscale') && R() < 0.5 ? between(0.1, 0.25) : 0, upload: has('objstore') && R() < 0.5 ? between(0.02, 0.05) : 0 };
   m.read = Math.max(0.2, 1 - m.static - m.write - m.pay - m.reco - m.upload);
-  const duration = 24;
+  const duration = GEN_DURATION;
   const evPool = ['spike'];
   if (round >= 2 || opts.all) evPool.push('crash');
   if (has('cache')) evPool.push('cacheFlush');
@@ -35,7 +38,7 @@ export function genLevel(R, round, opts = {}) {
   const used = new Set();
   for (let k = 0; k < nEv; k++) {
     const type = pick(evPool.filter(x => !used.has(x))); if (!type) break; used.add(type);
-    const t = Math.round(between(6, 14));
+    const t = Math.round(between(GEN_EVENT_FROM, GEN_EVENT_TO));
     tags.push(EVENT_NAMES[type] + ' vers ' + t + ' s');
     if (type === 'crash') events.push({ type, t, target: 0 });
     if (type === 'cacheFlush') events.push({ type, t });

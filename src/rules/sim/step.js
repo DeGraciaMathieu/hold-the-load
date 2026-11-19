@@ -1,5 +1,5 @@
 import {
-  DT, BASE_LAT, DIST, TTL, LB_LAT, RETRY_LAT,
+  DT, BASE_LAT, DIST, TTL, LB_LAT, RETRY_LAT, CACHE_LAT, QUEUE_LAT, OBJSTORE_LAT,
   STATIC_COST, UPLOAD_COST, SIGNED_UPLOAD_COST, PAY_WAIT_DIVISOR, STICKY_CAPACITY, API_DEFAULT_LAT,
   API_BAD_LAT, API_BAD_ERR, BREAKER_OPEN_AFTER, BREAKER_CLOSE_AFTER, TIMEOUT_SHORT, TIMEOUT_LONG,
   CACHE_WARMUP, STAMPEDE_LOAD, WAF_STRICT_BLOCKED, WAF_STRICT_BOTS_PASS, WAF_SOFT_BOTS_PASS, SESSION_LOSS_WINDOW,
@@ -205,7 +205,7 @@ export function stepSim(S) {
     if (c === 'upload') {
       if (S.objstore) {
         if (!objAlive) { failA(c, v, 'objDown'); continue; }
-        okA(c, v, base + 30 + DIST[g][S.objstore.region]); D.jobs.upload += v; continue;
+        okA(c, v, base + OBJSTORE_LAT + DIST[g][S.objstore.region]); D.jobs.upload += v; continue;
       }
       okA(c, v, base * 2.5); continue;
     }
@@ -221,7 +221,7 @@ export function stepSim(S) {
       continue;
     }
     if (c === 'write') {
-      if (queueAlive) { okA(c, v, base + 5 + DIST[g][S.queue.region]); D.jobs.write += v; continue; }
+      if (queueAlive) { okA(c, v, base + QUEUE_LAT + DIST[g][S.queue.region]); D.jobs.write += v; continue; }
       if (!prim) { failA(c, v, S.primary ? 'dbDown' : 'noDb'); continue; }
       failA(c, v * connFail, 'conn');
       directWrites.push({ c, v: v * (1 - connFail), g, base });
@@ -238,7 +238,7 @@ export function stepSim(S) {
       let miss = vn;
       if (cacheAlive) {
         const h = vn * hit;
-        okA(c, h, base + 2 + DIST[g][S.cache.region]);
+        okA(c, h, base + CACHE_LAT + DIST[g][S.cache.region]);
         if (c === 'read') { A.main.stale += h * staleShare; A.main.cached += h; }
         miss = vn - h;
       }

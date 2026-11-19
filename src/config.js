@@ -17,6 +17,9 @@ export const DB_LAT_MIN = 15; // ms
 export const LAT_SURGE = 3;
 export const LB_LAT = 2; // ms ajoutées par le load balancer
 export const RETRY_LAT = 300; // ms ajoutées par nouvel essai
+export const CACHE_LAT = 2; // ms d'une lecture servie par le cache
+export const QUEUE_LAT = 5; // ms pour déposer une écriture en file
+export const OBJSTORE_LAT = 30; // ms d'un upload vers le stockage objet
 
 // ---- Coût en capacité serveur d'une requête, par classe
 export const STATIC_COST = 0.5;
@@ -103,8 +106,12 @@ export const CAMP_RPS_GROWTH = 1.32; // facteur de trafic d'un tour au suivant
 export const REGIONS_CHANCE_ALL = 0.25; // probabilité de multi-régions dans le défi du jour
 export const REGIONS_CHANCE_LATE = 0.35; // probabilité de multi-régions à partir de REGIONS_FROM_ROUND
 export const REGIONS_FROM_ROUND = 9;
+export const GEN_DURATION = 24; // s d'un tour généré
+export const GEN_EVENT_FROM = 6; // s, plus tôt qu'un incident puisse survenir
+export const GEN_EVENT_TO = 14; // s, plus tard qu'un incident puisse survenir
 
 // ---- Affichage lié aux règles
+export const SPEED_FAST = 2; // vitesse de lecture d'un run au lancement (×2), ×1 sinon
 export const QUEUE_GAUGE_MAX = 4000; // tâches en file pour une jauge pleine
 export const POOLER_GAUGE_MAX = 150; // connexions pour une jauge pleine quand il n'y a pas de base
 export const DIAG_MIN_SHARE = 0.0005; // part minimale d'une cause d'échec pour l'afficher
