@@ -3,12 +3,11 @@ import {
   RETRY_LAT, STATIC_COST, UPLOAD_COST, SIGNED_UPLOAD_COST, PAY_WAIT_DIVISOR, STICKY_CAPACITY,
   API_DEFAULT_LAT, API_BAD_LAT, API_BAD_ERR, BREAKER_OPEN_AFTER, BREAKER_CLOSE_AFTER, TIMEOUT_SHORT,
   TIMEOUT_LONG, CACHE_WARMUP, STAMPEDE_LOAD, WAF_STRICT_BLOCKED, WAF_STRICT_BOTS_PASS, WAF_SOFT_BOTS_PASS,
-  SESSION_LOSS_WINDOW, SHED_THRESHOLD, PRIMARY_CAP, PRIMARY_MAX_CONN, REPLICA_CAP, POOLER_MAX_CONN,
-  FAILOVER_DELAY, PROMOTION_DURATION, LAG_MIN, LAG_SLOPE, LAG_REPLICA_THRESHOLD, LAG_WRITE_DIVISOR,
-  STALE_MAX, STALE_LAG_DIVISOR, WORKER_RATE, WORKER_CONNS, BACKLOG_TOLERANCE, AUTO_INSTANCE_CAP,
-  AUTO_INSTANCE_COST, AUTO_BOOT, AUTO_UP_AFTER, AUTO_DOWN_UTIL, AUTO_DOWN_AFTER, AUTO_DOWN_RESET,
-  ADD_SERVER_BOOT, ADD_SERVER_COST, RESTART_BOOT, PREWARM_COUNT, PREWARM_HOLD, CAMP_START_CASH,
-  QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX, DIAG_MIN_SHARE,
+  SESSION_LOSS_WINDOW, SHED_THRESHOLD, REPLICA_CAP, POOLER_MAX_CONN, FAILOVER_DELAY, LAG_MIN,
+  LAG_SLOPE, LAG_REPLICA_THRESHOLD, LAG_WRITE_DIVISOR, STALE_MAX, STALE_LAG_DIVISOR, WORKER_RATE,
+  WORKER_CONNS, BACKLOG_TOLERANCE, AUTO_INSTANCE_CAP, AUTO_INSTANCE_COST, AUTO_BOOT, AUTO_UP_AFTER,
+  AUTO_DOWN_UTIL, AUTO_DOWN_AFTER, AUTO_DOWN_RESET, CAMP_START_CASH, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX,
+  DIAG_MIN_SHARE,
 } from './config.js';
 import { srvLat, dbLat } from './rules/latency.js';
 import { p95, addReason } from './rules/stats.js';
@@ -20,6 +19,8 @@ import { isDailyRecord } from './rules/daily.js';
 import { mixOf, wave } from './content/levels.js';
 import { rng, genLevel, dailyLevel } from './rules/procgen.js';
 import { makeSim, evActive, receiversOf } from './rules/sim/make.js';
+import { promote, useCard } from './rules/sim/cards.js';
+import { CARDS } from './content/texts.js';
 
 // ============ Moteur de simulation v2 ============
 const REGION_NAMES = { eu: 'Paris', us: 'New York', asia: 'Tokyo' };
@@ -42,14 +43,6 @@ const OPT_DEFS = {
   ],
   db: [{ k: 'sensible', label: 'Lectures sensibles', choices: [[false, 'Partout'], [true, 'Sur la primaire']],
     help: { false: 'Les lectures juste après une écriture peuvent tomber sur une réplique en retard.', true: 'Les lectures juste après une écriture vont sur la primaire : toujours fraîches, mais plus de charge.' } }],
-};
-const CARDS = {
-  addServer: { name: 'Serveur en renfort', desc: 'Un serveur moyen démarre en 5 s (+40 €).' },
-  restart: { name: 'Relancer', desc: 'Les serveurs tombés redémarrent en 4 s.' },
-  prewarm: { name: 'Préchauffer', desc: 'L’autoscaling lance 3 instances tout de suite (prêtes en 6 s).' },
-  degrade: { name: 'Mode dégradé', desc: 'Coupe les recommandations jusqu’à la fin.' },
-  waf: { name: 'Basculer le WAF', desc: 'Passe le pare-feu de souple à strict, ou l’inverse.' },
-  promote: { name: 'Promouvoir la réplique', desc: 'La première réplique devient la primaire. Les écritures pas encore répliquées sont perdues.' },
 };
 const REASONS = {
   noServer: 'Aucun serveur pour répondre',
@@ -406,55 +399,6 @@ function stepSim(S) {
   S.step++; S.t = S.step * DT;
   if (S.step >= S.steps) S.done = true;
   return tk;
-}
-
-function promote(S, auto) {
-  const rep = S.replicas.find(x => x.alive);
-  if (!rep) return false;
-  if (S.primary && S.primary.alive && !auto) {
-    // écritures non répliquées perdues
-    const loss = S.lastWriteRate * (S.lastLag + PROMOTION_DURATION); // la bascule elle-même dure ~3 s
-    S.acc.ok -= loss; S.acc.fail += loss; addReason(S.acc.reasons, 'promoLoss', loss);
-    S.primary.alive = false;
-  }
-  rep.type = 'db'; rep.promoted = true;
-  S.replicas = S.replicas.filter(x => x !== rep);
-  const old = S.primary;
-  S.primary = { brick: { id: rep.id, opts: { sensible: old ? old.brick.opts.sensible : false } }, cap: PRIMARY_CAP, maxConn: PRIMARY_MAX_CONN, region: rep.region, alive: true };
-  S.failoverAt = null;
-  S.log.push({ t: S.t, msg: (auto ? 'Bascule automatique : ' : '') + 'la réplique devient primaire' });
-  S.promotedId = rep.id;
-  return true;
-}
-
-function useCard(S, name) {
-  if (!S.cards[name]) return { ok: false, msg: 'Plus de carte' };
-  const t = S.t;
-  let ok = false, msg = '';
-  if (name === 'addServer') {
-    S.temps.push({ id: 'tmp' + S.temps.length, cap: SIZES.m.cap, conns: SIZES.m.conns, region: (S.lb && S.lb.region) || 'eu', alive: true, readyAt: t + ADD_SERVER_BOOT, kind: 'temp' });
-    S.extraCost += ADD_SERVER_COST; ok = true; msg = 'Serveur en route (5 s)';
-    if (!S.lb) msg = 'Serveur lancé, mais sans load balancer il ne recevra rien';
-  } else if (name === 'restart') {
-    const dead = S.fixed.filter(f => !f.alive && !(S.level.events || []).some(e => e.type === 'regionDown' && e.region === f.region && S.t >= e.t));
-    if (!dead.length) return { ok: false, msg: 'Aucun serveur à relancer' };
-    dead.forEach(f => { f.alive = true; f.readyAt = t + RESTART_BOOT; }); ok = true; msg = 'Redémarrage (4 s)';
-  } else if (name === 'prewarm') {
-    if (!S.group) return { ok: false, msg: 'Pas d’autoscaling' };
-    for (let k = 0; k < PREWARM_COUNT; k++) S.group.inst.push({ readyAt: t + AUTO_BOOT, alive: true, region: S.group.brick.region });
-    S.group.hold = t + PREWARM_HOLD; ok = true; msg = '+3 instances (6 s)';
-  } else if (name === 'degrade') {
-    S.recoOff = true; ok = true; msg = 'Recommandations coupées';
-  } else if (name === 'waf') {
-    if (!S.waf) return { ok: false, msg: 'Pas de pare-feu' };
-    S.wafMode = S.wafMode === 'strict' ? 'souple' : 'strict'; ok = true; msg = 'WAF ' + S.wafMode;
-  } else if (name === 'promote') {
-    if (!S.replicas.some(x => x.alive)) return { ok: false, msg: 'Aucune réplique à promouvoir' };
-    S.lastLag = S.ticks.length ? S.ticks[S.ticks.length - 1].lag : LAG_MIN;
-    ok = promote(S, false); msg = 'Réplique promue';
-  }
-  if (ok) { S.cards[name]--; S.log.push({ t, msg: CARDS[name].name }); }
-  return { ok, msg };
 }
 
 function resultOf(S) {
