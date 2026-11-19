@@ -832,6 +832,8 @@ try { Object.assign(ST, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) {} };
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('fr-FR');
+// Seules sources d'aléa et d'horloge du jeu : la graine d'une partie Croissance et la date du défi.
+const randomSeed = () => Math.floor(Math.random() * 1e9);
 const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 // ---------- contexte courant ----------
@@ -839,7 +841,7 @@ let CUR = null; // { kind, level, key }
 function campLevel() { return genLevel(rng(ST.camp.seed + ':' + ST.camp.round), ST.camp.round); }
 function buildCtx() {
   if (ST.mode === 'camp') {
-    if (!ST.camp) newCamp();
+    if (!ST.camp) newCamp(randomSeed());
     const lv = campLevel();
     CUR = { kind: 'camp', level: lv, key: 'camp' };
   } else if (ST.mode === 'daily') {
@@ -853,7 +855,7 @@ function buildCtx() {
   if (!ST.layouts[CUR.key]) ST.layouts[CUR.key] = CUR.level.preset ? cloneLayout(CUR.level.preset) : emptyLayout();
   if (!ST.settings[CUR.key]) ST.settings[CUR.key] = { retries: 0, timeout: 'long', shed: false };
 }
-function newCamp() { ST.camp = { seed: Math.floor(Math.random() * 1e9), round: 1, cash: CAMP_START_CASH, history: [], over: false }; ST.layouts.camp = emptyLayout(); ST.settings.camp = { retries: 0, timeout: 'long', shed: false }; }
+function newCamp(seed) { ST.camp = { seed, round: 1, cash: CAMP_START_CASH, history: [], over: false }; ST.layouts.camp = emptyLayout(); ST.settings.camp = { retries: 0, timeout: 'long', shed: false }; }
 const lay = () => ST.layouts[CUR.key];
 const sets = () => ST.settings[CUR.key];
 const regionsOf = lv => (lv.regions ? Object.keys(lv.regions) : null);
@@ -1460,7 +1462,7 @@ function showResult(res) {
     showModal(html, el => {
       if (lost) {
         ST.campBest = Math.max(ST.campBest || 0, c.round - 1); save();
-        el.querySelector('#mNew').onclick = () => { closeAll(); newCamp(); if (ST.lastRes) delete ST.lastRes.camp; save(); refresh(); };
+        el.querySelector('#mNew').onclick = () => { closeAll(); newCamp(randomSeed()); if (ST.lastRes) delete ST.lastRes.camp; save(); refresh(); };
       } else {
         el.querySelector('#mRetry').onclick = closeAll;
         el.querySelector('#mNext').onclick = () => {
