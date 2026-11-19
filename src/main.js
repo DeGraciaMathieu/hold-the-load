@@ -8,8 +8,7 @@ import {
   LAG_REPLICA_THRESHOLD, LAG_WRITE_DIVISOR, STALE_MAX, STALE_LAG_DIVISOR, WORKER_RATE, WORKER_CONNS,
   BACKLOG_TOLERANCE, AUTO_INSTANCE_CAP, AUTO_INSTANCE_CONNS, AUTO_INSTANCE_COST, AUTO_BOOT, AUTO_UP_AFTER,
   AUTO_DOWN_UTIL, AUTO_DOWN_AFTER, AUTO_DOWN_RESET, ADD_SERVER_BOOT, ADD_SERVER_COST, RESTART_BOOT,
-  PREWARM_COUNT, PREWARM_HOLD, CAMP_START_CASH, CAMP_RPS_START, CAMP_RPS_GROWTH, REGIONS_CHANCE_ALL,
-  REGIONS_CHANCE_LATE, REGIONS_FROM_ROUND, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX, DIAG_MIN_SHARE,
+  PREWARM_COUNT, PREWARM_HOLD, CAMP_START_CASH, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX, DIAG_MIN_SHARE,
 } from './config.js';
 import { srvLat, dbLat } from './rules/latency.js';
 import { p95, addReason } from './rules/stats.js';
@@ -18,6 +17,8 @@ import { defaultOpts, brickCost, layoutCost, emptyLayout, cloneLayout, hasType }
 import { goalsMet, missionStars, missionUnlocked } from './rules/goals.js';
 import { campRevenue, campOutcome, nextRound, campRecord } from './rules/campaign.js';
 import { isDailyRecord } from './rules/daily.js';
+import { mixOf, wave } from './content/levels.js';
+import { rng, genLevel, dailyLevel } from './rules/procgen.js';
 
 // ============ Moteur de simulation v2 ============
 const REGION_NAMES = { eu: 'Paris', us: 'New York', asia: 'Tokyo' };
@@ -538,8 +539,6 @@ function runAll(level, layout, settings, actions) {
 
 
 // ============ Missions ============
-const mixOf = o => ({ static: 0, read: 0, write: 0, upload: 0, pay: 0, reco: 0, ...o });
-const wave = (a, b, p) => t => a + b * Math.sin(t / p);
 const BR = {
   base: ['server', 'db'],
   lb: ['server', 'db', 'lb'],
@@ -686,75 +685,6 @@ const LEVELS = [
   },
 ];
 
-
-// ============ Génération procédurale (Croissance, Défi du jour) ============
-function rng(seed) { let s = hashStr('s' + seed) || 1; const f = () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; for (let i = 0; i < 8; i++) f(); return f; }
-function hashStr(str) { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
-const UNLOCKS = [
-  ['server', 'db', 'lb'], ['cache'], ['cdn', 'replica'], ['queue', 'worker'], ['autoscale'], ['breaker', 'waf', 'pooler'], ['objstore'],
-];
-const EVENT_NAMES = {
-  crash: 'un serveur tombe', cacheFlush: 'Redis redémarre', apiSlow: 'l’API de paiement rame', attack: 'un botnet attaque',
-  spike: 'pic de trafic', writeRush: 'ruée sur les paniers', regionDown: 'la région de la base tombe',
-};
-// round: 1..n ; difficulté croissante
-function genLevel(R, round, opts = {}) {
-  const pick = a => a[Math.floor(R() * a.length)];
-  const between = (a, b) => a + (b - a) * R();
-  const bricks = []; UNLOCKS.slice(0, Math.min(UNLOCKS.length, Math.ceil(round / 1.5) + 1)).forEach(u => bricks.push(...u));
-  if (opts.all) bricks.splice(0, bricks.length, ...UNLOCKS.flat());
-  const has = t => bricks.includes(t);
-  const rps = Math.round((opts.rps || CAMP_RPS_START * Math.pow(CAMP_RPS_GROWTH, round - 1)) / 50) * 50;
-  const m = { static: has('cdn') ? between(0.15, 0.45) : 0, write: between(0.05, 0.15), pay: has('breaker') ? between(0.05, 0.15) : 0,
-    reco: has('autoscale') && R() < 0.5 ? between(0.1, 0.25) : 0, upload: has('objstore') && R() < 0.5 ? between(0.02, 0.05) : 0 };
-  m.read = Math.max(0.2, 1 - m.static - m.write - m.pay - m.reco - m.upload);
-  const duration = 24;
-  const evPool = ['spike'];
-  if (round >= 2 || opts.all) evPool.push('crash');
-  if (has('cache')) evPool.push('cacheFlush');
-  if (has('queue')) evPool.push('writeRush');
-  if (m.pay > 0) evPool.push('apiSlow');
-  if (has('waf')) evPool.push('attack');
-  const regions = (opts.all ? R() < REGIONS_CHANCE_ALL : round >= REGIONS_FROM_ROUND && R() < REGIONS_CHANCE_LATE) ? { eu: 0.6, us: 0.4 } : null;
-  if (regions) evPool.push('regionDown');
-  const nEv = round <= 1 ? 0 : round <= 4 ? 1 : opts.all ? 1 + (R() < 0.5 ? 1 : 0) : 2;
-  const events = [], tags = [];
-  let spike = null, rush = null;
-  const used = new Set();
-  for (let k = 0; k < nEv; k++) {
-    const type = pick(evPool.filter(x => !used.has(x))); if (!type) break; used.add(type);
-    const t = Math.round(between(6, 14));
-    tags.push(EVENT_NAMES[type] + ' vers ' + t + ' s');
-    if (type === 'crash') events.push({ type, t, target: 0 });
-    if (type === 'cacheFlush') events.push({ type, t });
-    if (type === 'apiSlow') events.push({ type, from: t, to: t + 7, lat: 3000 });
-    if (type === 'attack') events.push({ type, from: t, to: t + 7, mult: 3 });
-    if (type === 'regionDown') events.push({ type, t, region: 'primary' });
-    if (type === 'spike') spike = { from: t, to: t + 6, k: 1.8 };
-    if (type === 'writeRush') rush = { from: t, to: t + 5 };
-  }
-  const base = wave(0.92, 0.08, 2 + R() * 2);
-  const profile = spike ? (t => (t >= spike.from && t < spike.to ? spike.k : 1) * base(t)) : base;
-  const mixFix = mixOf(m);
-  const mix = rush ? (t => (t >= rush.from && t < rush.to ? mixOf({ ...m, read: m.read * 0.3, write: m.write + m.read * 0.7 }) : mixFix)) : mixFix;
-  const lvl = {
-    id: opts.id || 'gen' + round, title: opts.title || 'Tour ' + round, bricks, sizes: has('autoscale') || opts.all,
-    settingsAllowed: has('breaker') ? ['timeout', 'retries', 'shed'] : [],
-    rps, duration, mix, profile, events, regions,
-    logged: has('cache') ? 0.5 : 0, fresh: has('replica') ? 0.2 : 0,
-    cards: round >= 3 || opts.all ? { [pick(['addServer', 'restart', ...(has('autoscale') ? ['prewarm'] : []), ...(m.reco ? ['degrade'] : []), ...(has('waf') ? ['waf'] : []), ...(has('replica') ? ['promote'] : [])])]: 1 } : {},
-    goals: { avail: 99, p95: (opts.p95 || 200) + (regions ? 50 : 0), budget: null },
-    story: rps.toLocaleString('fr-FR') + ' req/s' + (m.static ? ', ' + Math.round(m.static * 100) + ' % de statique' : '') + (m.pay ? ', ' + Math.round(m.pay * 100) + ' % de paiements' : '') +
-      (m.reco ? ', ' + Math.round(m.reco * 100) + ' % de recos' : '') + (m.upload ? ', des uploads' : '') + (regions ? ', clients à Paris et New York' : '') + '. ' +
-      (tags.length ? 'Au programme : ' + tags.join(', ') + '.' : 'Pas d’incident prévu.'),
-  };
-  return lvl;
-}
-function dailyLevel(dateStr) {
-  const R = rng('tlc-' + dateStr);
-  const lv = genLevel(R, 7, { all: true, rps: 800 + Math.round(R() * 16) * 100, id: 'daily-' + dateStr, title: 'Défi du ' + dateStr.split('-').reverse().slice(0, 2).join('/'), p95: 180 });
-  return lv;
-}
 
 // ============ Interface ============
 const COLORS = { lb: '#f4a259', cdn: '#b8a1e3', waf: '#e7a3b8', server: '#9cc3e6', autoscale: '#7fb0e0', worker: '#a9d3cf', cache: '#ef8a7c', queue: '#f2d36b',
