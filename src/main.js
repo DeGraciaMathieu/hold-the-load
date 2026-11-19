@@ -17,6 +17,7 @@ import { ROW_DEF, CATALOG } from './content/catalog.js';
 import { defaultOpts, brickCost, layoutCost, emptyLayout, cloneLayout, hasType } from './rules/layout.js';
 import { goalsMet, missionStars, missionUnlocked } from './rules/goals.js';
 import { campRevenue, campOutcome, nextRound, campRecord } from './rules/campaign.js';
+import { isDailyRecord } from './rules/daily.js';
 
 // ============ Moteur de simulation v2 ============
 const REGION_NAMES = { eu: 'Paris', us: 'New York', asia: 'Tokyo' };
@@ -1375,7 +1376,7 @@ function showResult(res) {
   } else if (CUR.kind === 'daily') {
     const d = (ST.daily[CUR.key] ||= {});
     let best = '';
-    if (met.win && (!d.best || res.cost < d.best)) { d.best = res.cost; best = '<p class="desc" style="font-size:12px;margin:8px 0">🏆 Nouveau record !</p>'; }
+    if (isDailyRecord(met, res, d.best)) { d.best = res.cost; best = '<p class="desc" style="font-size:12px;margin:8px 0">🏆 Nouveau record !</p>'; }
     save(); renderTop();
     const share = `Tenir la charge · ${lv.title} · ${met.win ? res.cost + ' €/mois ✓' : 'pas tenu'} (dispo ${res.avail.toFixed(2)} %, p95 ${Math.round(res.p95)} ms)`;
     showModal(`<h2>${met.win ? 'Défi tenu' : 'Ça n’a pas tenu'}</h2>${best}${rows}${diagHtml(res)}<div class="actions"><button class="btn light" id="mClose">Retenter</button><button class="btn" id="mCopy">Copier le score</button></div>`, el => {
