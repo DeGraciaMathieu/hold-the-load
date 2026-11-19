@@ -16,6 +16,7 @@ import { srvLat, dbLat } from './rules/latency.js';
 import { p95, addReason } from './rules/stats.js';
 import { ROW_DEF, CATALOG } from './content/catalog.js';
 import { defaultOpts, brickCost, layoutCost, emptyLayout, cloneLayout, hasType } from './rules/layout.js';
+import { goalsMet, missionStars, missionUnlocked } from './rules/goals.js';
 
 // ============ Moteur de simulation v2 ============
 const REGION_NAMES = { eu: 'Paris', us: 'New York', asia: 'Tokyo' };
@@ -522,17 +523,6 @@ function resultOf(S) {
     recos: acc.recoTot > 0 ? (acc.recoOk / acc.recoTot) * 100 : 100,
     reasons: acc.reasons, total, ok: acc.ok, fail: acc.fail, log: S.log,
   };
-}
-
-function goalsMet(level, res) {
-  const g = level.goals, out = {};
-  out.avail = res.avail >= g.avail;
-  out.p95 = res.ok > 0 && res.p95 <= g.p95;
-  out.budget = g.budget == null || res.cost <= g.budget;
-  if (g.fresh != null) out.fresh = res.fresh >= g.fresh;
-  if (g.recos != null) out.recos = res.recos >= g.recos;
-  out.win = Object.values(out).every(Boolean);
-  return out;
 }
 
 function runAll(level, layout, settings, actions) {
@@ -1252,7 +1242,7 @@ function renderTop() {
     const box = $('levels');
     LEVELS.forEach((lv, i) => {
       const st = ST.stars[lv.id] || 0;
-      const unlocked = i === 0 || (ST.stars[LEVELS[i - 1].id] || 0) === 3 || i <= ST.level || st > 0;
+      const unlocked = missionUnlocked(LEVELS, ST.stars, i, ST.level);
       const b = document.createElement('button');
       b.className = 'lvl' + (i === ST.level ? ' cur' : '') + (unlocked ? '' : ' locked');
       b.innerHTML = (i + 1) + '<small>' + '★'.repeat(st) + '☆'.repeat(3 - st) + '</small>';
@@ -1373,8 +1363,7 @@ function showResult(res) {
     + (g.fresh != null ? row('Fraîcheur', res.fresh.toFixed(1) + ' %', '≥ ' + g.fresh, met.fresh) : '')
     + (g.recos != null ? row('Recos servies', Math.round(res.recos) + ' %', '≥ ' + g.recos, met.recos) : '');
   if (CUR.kind === 'mission') {
-    const extras = met.fresh !== false && met.recos !== false;
-    const stars = met.avail && extras ? 1 + (met.p95 ? 1 : 0) + (met.budget ? 1 : 0) : 0;
+    const stars = missionStars(met);
     if (stars > (ST.stars[lv.id] || 0)) ST.stars[lv.id] = stars;
     save(); renderTop();
     const next = ST.level < LEVELS.length - 1;
