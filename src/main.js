@@ -8,15 +8,15 @@ import {
   LAG_REPLICA_THRESHOLD, LAG_WRITE_DIVISOR, STALE_MAX, STALE_LAG_DIVISOR, WORKER_RATE, WORKER_CONNS,
   BACKLOG_TOLERANCE, AUTO_INSTANCE_CAP, AUTO_INSTANCE_CONNS, AUTO_INSTANCE_COST, AUTO_BOOT, AUTO_UP_AFTER,
   AUTO_DOWN_UTIL, AUTO_DOWN_AFTER, AUTO_DOWN_RESET, ADD_SERVER_BOOT, ADD_SERVER_COST, RESTART_BOOT,
-  PREWARM_COUNT, PREWARM_HOLD, CAMP_START_CASH, CAMP_BASE_REVENUE, CAMP_REVENUE_PER_RPS, CAMP_AVAIL_FLOOR,
-  CAMP_AVAIL_SPAN, CAMP_SLOW_PENALTY, CAMP_RPS_START, CAMP_RPS_GROWTH, REGIONS_CHANCE_ALL, REGIONS_CHANCE_LATE,
-  REGIONS_FROM_ROUND, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX, DIAG_MIN_SHARE,
+  PREWARM_COUNT, PREWARM_HOLD, CAMP_START_CASH, CAMP_RPS_START, CAMP_RPS_GROWTH, REGIONS_CHANCE_ALL,
+  REGIONS_CHANCE_LATE, REGIONS_FROM_ROUND, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX, DIAG_MIN_SHARE,
 } from './config.js';
 import { srvLat, dbLat } from './rules/latency.js';
 import { p95, addReason } from './rules/stats.js';
 import { ROW_DEF, CATALOG } from './content/catalog.js';
 import { defaultOpts, brickCost, layoutCost, emptyLayout, cloneLayout, hasType } from './rules/layout.js';
 import { goalsMet, missionStars, missionUnlocked } from './rules/goals.js';
+import { campRevenue, campOutcome, nextRound, campRecord } from './rules/campaign.js';
 
 // ============ Moteur de simulation v2 ============
 const REGION_NAMES = { eu: 'Paris', us: 'New York', asia: 'Tokyo' };
@@ -1384,24 +1384,22 @@ function showResult(res) {
     });
   } else {
     const c = ST.camp;
-    const rev = campRevenue(lv, res.avail, res.p95);
-    const net = rev - res.cost;
-    const cash = c.cash + net;
-    const lost = res.avail < CAMP_AVAIL_FLOOR || cash < 0;
-    const why = res.avail < CAMP_AVAIL_FLOOR ? 'Trop de pannes : les clients sont partis.' : cash < 0 ? 'Trésorerie à sec.' : '';
+    const { rev, net, cash, brokeBy } = campOutcome(lv, res, c.cash);
+    const lost = brokeBy != null;
+    const why = brokeBy === 'avail' ? 'Trop de pannes : les clients sont partis.' : brokeBy === 'cash' ? 'Trésorerie à sec.' : '';
     const html = `<h2>${lost ? 'Faillite' : 'Tour ' + c.round + ' passé'}</h2>${rows}
       <div class="diag"><b>Bilan du tour</b><div>Revenu : +${fmt(rev)} €${res.avail < 99 ? ' (amputé par les pannes)' : ''}${res.p95 > lv.goals.p95 ? ' (−30 % pour la lenteur)' : ''}</div><div>Infra : −${fmt(res.cost)} €</div><div><b style="display:inline;color:inherit;font-size:11px;letter-spacing:0;text-transform:none">Net : ${net >= 0 ? '+' : ''}${fmt(net)} € → trésorerie ${fmt(cash)} €</b></div>${lost ? `<div>✕ ${why}</div>` : ''}</div>${diagHtml(res)}
       <div class="actions">${lost ? '<button class="btn go" id="mNew">Nouvelle partie</button>' : '<button class="btn light" id="mRetry">Rejouer le tour</button><button class="btn go" id="mNext">Tour suivant →</button>'}</div>`;
     showModal(html, el => {
       if (lost) {
-        ST.campBest = Math.max(ST.campBest || 0, c.round - 1); save();
+        ST.campBest = campRecord(ST.campBest, c); save();
         el.querySelector('#mNew').onclick = () => { closeAll(); newCamp(randomSeed()); if (ST.lastRes) delete ST.lastRes.camp; save(); refresh(); };
       } else {
         el.querySelector('#mRetry').onclick = closeAll;
         el.querySelector('#mNext').onclick = () => {
           const before = new Set(campLevel().bricks);
-          c.cash = cash; c.history.push({ round: c.round, net, avail: res.avail }); c.round++; if (ST.lastRes) delete ST.lastRes.camp;
-          ST.campBest = Math.max(ST.campBest || 0, c.round - 1);
+          ST.camp = nextRound(c, { cash, net, avail: res.avail }); if (ST.lastRes) delete ST.lastRes.camp;
+          ST.campBest = campRecord(ST.campBest, ST.camp);
           closeAll(); save(); refresh();
           const fresh = CUR.level.bricks.filter(t => !before.has(t));
           if (fresh.length) toast('Nouvelles briques : ' + fresh.map(t => CATALOG[t].name).join(', '));
@@ -1409,11 +1407,6 @@ function showResult(res) {
       }
     });
   }
-}
-function campRevenue(lv, avail, p95) {
-  const full = CAMP_BASE_REVENUE + lv.rps * CAMP_REVENUE_PER_RPS;
-  const k = Math.max(0, Math.min(1, (avail - CAMP_AVAIL_FLOOR) / CAMP_AVAIL_SPAN));
-  return Math.round(full * k * (p95 > lv.goals.p95 ? CAMP_SLOW_PENALTY : 1));
 }
 
 // ---------- boucle ----------
