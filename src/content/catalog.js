@@ -38,3 +38,32 @@ export const CATALOG = {
 
 // Classes de requêtes, dans l'ordre où le simulateur les traite.
 export const CLASSES = ['static', 'read', 'write', 'upload', 'pay', 'reco'];
+
+// Briques communes à toutes les régions.
+export const GLOBAL = ['lb', 'cdn', 'waf'];
+
+// Options réglables par brique et réglages de l’appli.
+export const OPT_DEFS = {
+  lb: [{ k: 'algo', label: 'Répartition', choices: [['rr', 'Tourniquet'], ['sticky', 'Sticky'], ['least', 'Moins chargé']],
+    help: { rr: 'Chaque serveur reçoit la même part, quelle que soit sa taille.', sticky: 'Un utilisateur reste sur le même serveur : les sessions marchent sans Redis, mais la charge est moins bien répartie (−15 % de capacité).', least: 'Envoie vers le serveur le moins chargé : indispensable si les tailles sont mélangées.' } }],
+  waf: [{ k: 'mode', label: 'Filtrage', choices: [['souple', 'Souple'], ['strict', 'Strict']] }],
+  server: [{ k: 'size', label: 'Taille', choices: [['s', 'Petit · 25 €'], ['m', 'Moyen · 40 €'], ['l', 'Gros · 85 €']] }],
+  autoscale: [
+    { k: 'min', label: 'Instances minimum', choices: [[1, '1'], [2, '2'], [3, '3'], [4, '4']] },
+    { k: 'max', label: 'Instances maximum', choices: [[4, '4'], [6, '6'], [8, '8']] },
+    { k: 'seuil', label: 'Seuil de déclenchement', choices: [[50, '50 %'], [70, '70 %'], [85, '85 %']] },
+  ],
+  cache: [
+    { k: 'ttl', label: 'Durée de vie', choices: [['court', 'Courte'], ['moyen', 'Moyenne'], ['long', 'Longue']],
+      help: { court: '60 % des lectures servies, toujours fraîches.', moyen: '80 % servies, 1 % périmées.', long: '93 % servies, 8 % périmées.' } },
+    { k: 'antiRuee', label: 'Protection anti-ruée (+10 €)', choices: [[false, 'Non'], [true, 'Oui']],
+      help: { false: 'Cache vide : chaque requête manquée part en base, souvent plusieurs fois pour la même donnée.', true: 'Cache vide : une seule requête par donnée part en base, les autres attendent.' } },
+  ],
+  db: [{ k: 'sensible', label: 'Lectures sensibles', choices: [[false, 'Partout'], [true, 'Sur la primaire']],
+    help: { false: 'Les lectures juste après une écriture peuvent tomber sur une réplique en retard.', true: 'Les lectures juste après une écriture vont sur la primaire : toujours fraîches, mais plus de charge.' } }],
+};
+export const SET_DEFS = {
+  retries: { label: 'Nouveaux essais', choices: [[0, 'Aucun'], [1, '1'], [2, '2']], help: { 0: 'Une requête qui échoue est perdue.', 1: 'Un nouvel essai (+300 ms). Sauve les erreurs passagères, mais sur des serveurs saturés chaque essai s’ajoute à la file et la saturation s’emballe.', 2: 'Deux nouveaux essais (+300 ms chacun). Encore plus efficace contre les erreurs passagères, encore plus dangereux en saturation.' } },
+  timeout: { label: 'Timeout des appels externes', choices: [['court', '0,8 s'], ['long', '5 s']], help: { court: 'On abandonne vite : un serveur n’attend jamais plus de 0,8 s.', long: 'On attend jusqu’à 5 s : aucun paiement lent n’échoue, mais les serveurs restent bloqués pendant ce temps.' } },
+  shed: { label: 'Délestage des recos', choices: [[false, 'Non'], [true, 'Oui']], help: { false: 'Quand ça sature, toutes les requêtes échouent pareil.', true: 'Au-delà de 90 % de charge, les recommandations sont rejetées en premier.' } },
+};
