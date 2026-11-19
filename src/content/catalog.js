@@ -35,3 +35,6 @@ export const CATALOG = {
   objstore: { row: 'data', name: 'Stockage objet', short: 'S3', unique: true, cost: () => 20,
     desc: 'Reçoit les uploads directement : les serveurs ne font plus que signer. Le traitement des fichiers part en tâche de fond pour les workers.' },
 };
+
+// Classes de requêtes, dans l'ordre où le simulateur les traite.
+export const CLASSES = ['static', 'read', 'write', 'upload', 'pay', 'reco'];
