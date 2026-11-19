@@ -3,12 +3,12 @@ import {
   RETRY_LAT, STATIC_COST, UPLOAD_COST, SIGNED_UPLOAD_COST, PAY_WAIT_DIVISOR, STICKY_CAPACITY,
   API_DEFAULT_LAT, API_BAD_LAT, API_BAD_ERR, BREAKER_OPEN_AFTER, BREAKER_CLOSE_AFTER, TIMEOUT_SHORT,
   TIMEOUT_LONG, CACHE_WARMUP, STAMPEDE_LOAD, WAF_STRICT_BLOCKED, WAF_STRICT_BOTS_PASS, WAF_SOFT_BOTS_PASS,
-  SESSION_LOSS_WINDOW, SHED_THRESHOLD, PRIMARY_CAP, PRIMARY_MAX_CONN, LEGACY_CAP, LEGACY_MAX_CONN,
-  REPLICA_CAP, POOLER_MAX_CONN, FAILOVER_DELAY, PROMOTION_DURATION, LAG_MIN, LAG_SLOPE,
-  LAG_REPLICA_THRESHOLD, LAG_WRITE_DIVISOR, STALE_MAX, STALE_LAG_DIVISOR, WORKER_RATE, WORKER_CONNS,
-  BACKLOG_TOLERANCE, AUTO_INSTANCE_CAP, AUTO_INSTANCE_CONNS, AUTO_INSTANCE_COST, AUTO_BOOT, AUTO_UP_AFTER,
-  AUTO_DOWN_UTIL, AUTO_DOWN_AFTER, AUTO_DOWN_RESET, ADD_SERVER_BOOT, ADD_SERVER_COST, RESTART_BOOT,
-  PREWARM_COUNT, PREWARM_HOLD, CAMP_START_CASH, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX, DIAG_MIN_SHARE,
+  SESSION_LOSS_WINDOW, SHED_THRESHOLD, PRIMARY_CAP, PRIMARY_MAX_CONN, REPLICA_CAP, POOLER_MAX_CONN,
+  FAILOVER_DELAY, PROMOTION_DURATION, LAG_MIN, LAG_SLOPE, LAG_REPLICA_THRESHOLD, LAG_WRITE_DIVISOR,
+  STALE_MAX, STALE_LAG_DIVISOR, WORKER_RATE, WORKER_CONNS, BACKLOG_TOLERANCE, AUTO_INSTANCE_CAP,
+  AUTO_INSTANCE_COST, AUTO_BOOT, AUTO_UP_AFTER, AUTO_DOWN_UTIL, AUTO_DOWN_AFTER, AUTO_DOWN_RESET,
+  ADD_SERVER_BOOT, ADD_SERVER_COST, RESTART_BOOT, PREWARM_COUNT, PREWARM_HOLD, CAMP_START_CASH,
+  QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX, DIAG_MIN_SHARE,
 } from './config.js';
 import { srvLat, dbLat } from './rules/latency.js';
 import { p95, addReason } from './rules/stats.js';
@@ -19,6 +19,7 @@ import { campRevenue, campOutcome, nextRound, campRecord } from './rules/campaig
 import { isDailyRecord } from './rules/daily.js';
 import { mixOf, wave } from './content/levels.js';
 import { rng, genLevel, dailyLevel } from './rules/procgen.js';
+import { makeSim, evActive, receiversOf } from './rules/sim/make.js';
 
 // ============ Moteur de simulation v2 ============
 const REGION_NAMES = { eu: 'Paris', us: 'New York', asia: 'Tokyo' };
@@ -70,57 +71,6 @@ const REASONS = {
   promoLoss: 'Écritures perdues pendant la bascule',
 };
 const CLASSES = ['static', 'read', 'write', 'upload', 'pay', 'reco'];
-
-function makeSim(level, layout, settings) {
-  settings = { retries: 0, timeout: 'long', shed: false, ...(settings || {}) };
-  const regions = level.regions || { eu: 1 };
-  const bricks = [];
-  for (const r of ROW_DEF) layout[r.key].forEach((b, i) => {
-    if (!b) return;
-    bricks.push({ type: b.type, row: r.key, i, id: r.key + i, opts: { ...defaultOpts(b.type), ...(b.opts || {}) }, region: b.region || 'eu', alive: true, locked: b.locked });
-  });
-  const one = t => bricks.find(b => b.type === t) || null;
-  const lb = one('lb'), cdn = one('cdn'), waf = one('waf'), cache = one('cache'), queue = one('queue'), pooler = one('pooler'),
-    breaker = one('breaker'), objstore = one('objstore'), auto = one('autoscale');
-  const dbBrick = one('db');
-  const replicas = bricks.filter(b => b.type === 'replica');
-  const workers = bricks.filter(b => b.type === 'worker');
-  const fixed = bricks.filter(b => b.type === 'server').map(b => ({
-    id: b.id, brick: b, cap: SIZES[b.opts.size].cap, conns: SIZES[b.opts.size].conns, region: b.region, alive: true, readyAt: 0, kind: 'fixed',
-  }));
-  const temps = []; // serveurs ajoutés par carte
-  const group = auto ? { brick: auto, inst: [], hi: 0, lo: 0, hold: -1, instSec: 0 } : null;
-  if (group) for (let k = 0; k < auto.opts.min; k++) group.inst.push({ readyAt: 0, alive: true, region: auto.region });
-  const primary = dbBrick ? { brick: dbBrick, cap: dbBrick.opts.legacy ? LEGACY_CAP : PRIMARY_CAP, maxConn: dbBrick.opts.legacy ? LEGACY_MAX_CONN : PRIMARY_MAX_CONN, region: dbBrick.region, alive: true } : null;
-  const S = {
-    level, layout, settings, bricks, lb, cdn, waf, cache, queue, pooler, breaker, objstore, group, replicas, workers, fixed, temps,
-    primary, wafMode: waf ? waf.opts.mode : null,
-    t: 0, step: 0, steps: Math.round(level.duration / DT), done: false,
-    fired: {}, crashT: null, crashK: 0, failoverAt: null, coldStart: cache ? -99 : null,
-    brk: { open: false, bad: 0, good: 0 },
-    backlog: { write: 0, upload: 0, pay: 0 },
-    fPrev: { main: 0, reco: 0 }, recoOff: false, extraCost: 0, prevGroupRho: 0, lastLag: LAG_MIN, lastWriteRate: 0,
-    cards: { ...(level.cards || {}) }, log: [],
-    acc: { ok: 0, fail: 0, reasons: {}, samples: [], recoOk: 0, recoTot: 0, stale: 0, cachedOk: 0, total: 0 },
-    ticks: [],
-  };
-  return S;
-}
-
-function evActive(level, type, t) { return (level.events || []).filter(e => e.type === type && t >= e.from && t < e.to); }
-
-function receiversOf(S) {
-  const t = S.t, out = [];
-  if (!S.lb) {
-    const f = S.fixed[0];
-    if (f && f.alive && t >= f.readyAt) out.push(f);
-    return out;
-  }
-  for (const f of S.fixed) if (f.alive && t >= f.readyAt) out.push(f);
-  for (const f of S.temps) if (f.alive && t >= f.readyAt) out.push(f);
-  if (S.group && S.group.brick.alive) S.group.inst.forEach((x, k) => { if (x.alive && t >= x.readyAt) out.push({ id: 'auto' + k, cap: AUTO_INSTANCE_CAP, conns: AUTO_INSTANCE_CONNS, region: x.region, alive: true, kind: 'auto', inst: x }); });
-  return out;
-}
 
 function stepSim(S) {
   if (S.done) return null;
