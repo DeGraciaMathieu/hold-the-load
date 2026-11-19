@@ -1,7 +1,7 @@
 import { ROW_DEF, CATALOG, GLOBAL, OPT_DEFS, SET_DEFS } from '../content/catalog.js';
 import { LEVELS } from '../content/levels.js';
 import { REGION_NAMES, REASONS } from '../content/texts.js';
-import { DIAG_MIN_SHARE } from '../config.js';
+import { DIAG_MIN_SHARE, MAX_STARS } from '../config.js';
 import { defaultOpts, brickCost, hasType } from '../rules/layout.js';
 import { goalsMet, missionStars } from '../rules/goals.js';
 import { campOutcome, nextRound, campRecord } from '../rules/campaign.js';
@@ -112,7 +112,7 @@ export function showResult(res) {
     if (stars > (ST.stars[lv.id] || 0)) ST.stars[lv.id] = stars;
     save(); renderTop();
     const next = ST.level < LEVELS.length - 1;
-    showModal(`<h2>${met.win ? 'Ça tient !' : stars ? 'Presque…' : 'Ça n’a pas tenu'}</h2><div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>${rows}${diagHtml(res)}
+    showModal(`<h2>${met.win ? 'Ça tient !' : stars ? 'Presque…' : 'Ça n’a pas tenu'}</h2><div class="stars">${'★'.repeat(stars)}${'☆'.repeat(MAX_STARS - stars)}</div>${rows}${diagHtml(res)}
       <div class="actions"><button class="btn light" id="mClose">Modifier l’infra</button>${met.win && next ? '<button class="btn go" id="mNext">Suivante →</button>' : ''}</div>`, el => {
       el.querySelector('#mClose').onclick = closeAll;
       const n = el.querySelector('#mNext'); if (n) n.onclick = () => { closeAll(); ST.level++; save(); refresh(); };

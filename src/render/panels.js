@@ -1,3 +1,4 @@
+import { MAX_STARS } from '../config.js';
 import { LEVELS } from '../content/levels.js';
 import { CARDS } from '../content/texts.js';
 import { layoutCost, emptyLayout, cloneLayout, hasType } from '../rules/layout.js';
@@ -23,7 +24,7 @@ export function renderTop() {
       const unlocked = missionUnlocked(LEVELS, ST.stars, i, ST.level);
       const b = document.createElement('button');
       b.className = 'lvl' + (i === ST.level ? ' cur' : '') + (unlocked ? '' : ' locked');
-      b.innerHTML = (i + 1) + '<small>' + '★'.repeat(st) + '☆'.repeat(3 - st) + '</small>';
+      b.innerHTML = (i + 1) + '<small>' + '★'.repeat(st) + '☆'.repeat(MAX_STARS - st) + '</small>';
       b.onclick = () => { if (RUN) return; ST.level = i; save(); refresh(); };
       box.appendChild(b);
       if (i === ST.level) setTimeout(() => b.scrollIntoView({ inline: 'center', block: 'nearest' }), 0);

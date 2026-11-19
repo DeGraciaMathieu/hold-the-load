@@ -96,6 +96,9 @@ export const RESTART_BOOT = 4; // s
 export const PREWARM_COUNT = 3; // instances
 export const PREWARM_HOLD = 15; // s sans réduction après un préchauffage
 
+// ---- Missions
+export const MAX_STARS = 3; // étoiles d'une mission parfaite, exigées pour débloquer la suivante
+
 // ---- Croissance
 export const CAMP_START_CASH = 300; // €
 export const CAMP_BASE_REVENUE = 120; // € par tour

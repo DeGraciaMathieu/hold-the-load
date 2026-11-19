@@ -1,3 +1,5 @@
+import { MAX_STARS } from '../config.js';
+
 // Objectifs d'un niveau : chaque critère atteint ou non, et la victoire s'ils le sont tous.
 export function goalsMet(level, res) {
   const g = level.goals, out = {};
@@ -17,7 +19,7 @@ export function missionStars(met) {
   return met.avail && extras ? 1 + (met.p95 ? 1 : 0) + (met.budget ? 1 : 0) : 0;
 }
 
-// Une mission est jouable si c'est la première, si la précédente a 3 étoiles, si on l'a déjà atteinte ou réussie.
+// Une mission est jouable si c'est la première, si la précédente a toutes ses étoiles, si on l'a déjà atteinte ou réussie.
 export function missionUnlocked(levels, stars, i, current) {
-  return i === 0 || (stars[levels[i - 1].id] || 0) === 3 || i <= current || (stars[levels[i].id] || 0) > 0;
+  return i === 0 || (stars[levels[i - 1].id] || 0) === MAX_STARS || i <= current || (stars[levels[i].id] || 0) > 0;
 }
