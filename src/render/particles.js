@@ -2,6 +2,7 @@ import { TIMEOUT_SHORT, TIMEOUT_LONG } from '../config.js';
 import { CLASSES } from '../content/catalog.js';
 import { CUR, RUN, sets, mixNow } from '../state/context.js';
 import { W, G, center, placed, serverPos } from './geometry.js';
+import { C } from './theme.js';
 
 export let particles = [], bursts = [];
 export function clearParticles() { particles = []; bursts = []; }
@@ -14,13 +15,13 @@ export function spawn() {
   const P = t => placed(t).map(x => center(x.row, x.i));
   const alive = id => { const b = S.bricks.find(x => x.id === id); return b && b.alive; };
   const at = (t) => { const q = placed(t).filter(x => alive(x.row + x.i)); return q.length ? jit(center(q[0].row, q[0].i)) : null; };
-  const done = (fail, col) => ({ pts, fail, color: fail ? '#d64534' : '#2f9e5b' });
+  const done = (fail, col) => ({ pts, fail, color: fail ? C.bad : C.ok });
   // bots
   const isBot = tk.bots > 0 && Math.random() < tk.bots / (tk.bots + tk.T);
   const waf = at('waf');
   if (waf) pts.push(waf);
   if (isBot) {
-    if (waf && Math.random() > tk.botsPass / Math.max(1, tk.bots)) return { pts, fail: true, bot: true, color: '#8e44ad', blockColor: '#8e44ad' };
+    if (waf && Math.random() > tk.botsPass / Math.max(1, tk.bots)) return { pts, fail: true, bot: true, color: C.bot, blockColor: C.bot };
   } else if (waf && Math.random() < tk.vis.blockedFrac) return done(true);
   const m = mixNow(tk.t);
   const rnd = Math.random();
@@ -73,7 +74,7 @@ export function spawnJob() {
   if (d && RUN.tk.drained.write > 0 && Math.random() < RUN.tk.drained.write / Math.max(1e-9, RUN.tk.drained.write + RUN.tk.drained.upload + RUN.tk.drained.pay)) {
     const [row, i] = [d.id.replace(/\d+$/, ''), +d.id.match(/\d+$/)[0]]; pts.push(jit(center(row, i)));
   }
-  particles.push({ pts, fail: false, color: '#b08900', seg: 0, prog: 0, x: pts[0].x, y: pts[0].y, alpha: 1, job: true });
+  particles.push({ pts, fail: false, color: C.job, seg: 0, prog: 0, x: pts[0].x, y: pts[0].y, alpha: 1, job: true });
 }
 export function stepParticles(dt) {
   for (const p of particles) {
@@ -85,8 +86,8 @@ export function stepParticles(dt) {
     }
     if (p.seg >= p.pts.length - 1) {
       const l = p.pts[p.pts.length - 1]; p.x = l.x; p.y = l.y; p.dead = true;
-      if (p.fail) { bursts.push({ x: p.x, y: p.y, age: 0, color: p.bot ? '#8e44ad' : '#d64534' }); p.alpha = 0; }
-      else if (!p.job) p.color = '#2f9e5b';
+      if (p.fail) { bursts.push({ x: p.x, y: p.y, age: 0, color: p.bot ? C.bot : C.bad }); p.alpha = 0; }
+      else if (!p.job) p.color = C.ok;
     } else { const a = p.pts[p.seg], b = p.pts[p.seg + 1]; p.x = a.x + (b.x - a.x) * p.prog; p.y = a.y + (b.y - a.y) * p.prog; }
   }
   particles = particles.filter(p => p.alpha > 0);

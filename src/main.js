@@ -2,6 +2,7 @@ import { sources } from './state/context.js';
 import { draw } from './render/board.js';
 import { dismiss } from './render/dialogs.js';
 import { refresh, watchFooter } from './render/panels.js';
+import { loadTheme } from './render/theme.js';
 import { bindInput } from './input/handlers.js';
 import { clickBoard, hoverBoard, switchMode, toggleRun, toggleSpeed, launchKey, skipKey, relayout, frame } from './loop/run.js';
 
@@ -12,6 +13,7 @@ sources.randomSeed = randomSeed;
 sources.today = todayStr;
 
 bindInput({ board: clickBoard, hover: hoverBoard, keys: { l: launchKey, p: skipKey, v: toggleSpeed }, tab: switchMode, run: toggleRun, speed: toggleSpeed, scrim: dismiss, escape: dismiss, resize: relayout });
+loadTheme();
 refresh();
 watchFooter();
 document.fonts && document.fonts.ready.then(() => draw());
