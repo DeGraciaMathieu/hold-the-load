@@ -6,8 +6,8 @@ import { resultOf } from '../rules/sim/result.js';
 import { ST, save } from '../state/store.js';
 import { CUR, RUN, setRun, lay, sets } from '../state/context.js';
 import { $ } from '../render/dom.js';
-import { G } from '../render/geometry.js';
-import { draw } from '../render/board.js';
+import { G, layout } from '../render/geometry.js';
+import { drawIfNeeded, invalidate } from '../render/board.js';
 import { particles, clearParticles, spawn, spawnJob, stepParticles } from '../render/particles.js';
 import { renderGoals, refresh, renderCards, liveGoals } from '../render/panels.js';
 import { toast, addSheet, editSheet, showResult, blockedByRun } from '../render/dialogs.js';
@@ -26,6 +26,8 @@ export function toggleRun() {
 }
 export function toggleSpeed() { if (!RUN) return; RUN.speed = RUN.speed === SPEED_FAST ? 1 : SPEED_FAST; $('speed').textContent = '×' + RUN.speed; }
 
+export function relayout() { if (layout()) { clearParticles(); invalidate(); } }
+
 // ---------- run ----------
 function startRun() {
   const S = makeSim(CUR.level, lay(), sets());
@@ -41,7 +43,7 @@ function endRun() {
   const S = RUN.S;
   while (!S.done) stepSim(S);
   const res = resultOf(S);
-  setRun(null); clearParticles();
+  setRun(null); clearParticles(); invalidate();
   document.body.classList.remove('running');
   $('cards').classList.remove('on'); $('speed').style.display = 'none';
   $('run').textContent = 'Lancer ▶'; $('run').classList.add('go');
@@ -72,6 +74,6 @@ export function frame(now) {
     }
   }
   stepParticles(dt);
-  draw();
+  drawIfNeeded();
   requestAnimationFrame(frame);
 }

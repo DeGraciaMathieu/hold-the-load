@@ -10,6 +10,7 @@ import { CUR, RUN, buildCtx, lay, sets } from '../state/context.js';
 import { $, fmt } from './dom.js';
 import { layout } from './geometry.js';
 import { clearParticles } from './particles.js';
+import { invalidate } from './board.js';
 import { toast, openSheet, closeAll, changed, settingsSheet, blockedByRun } from './dialogs.js';
 
 // ---------- rendu de l'écran ----------
@@ -97,7 +98,7 @@ export function refresh() {
   renderGoals(ST.lastRes && ST.lastRes[CUR.key]); renderTools();
   $('hint').textContent = 'Touche une case pour poser une brique, une brique pour la régler.';
   clearParticles();
-  layout();
+  layout(); invalidate();
 }
 export function renderCards() {
   const S = RUN && RUN.S, box = $('cards');

@@ -9,7 +9,7 @@ import { isDailyRecord } from '../rules/daily.js';
 import { ST, save } from '../state/store.js';
 import { CUR, RUN, sources, campLevel, newCamp, lay, sets, regionsOf, lbAlgosOf } from '../state/context.js';
 import { $, fmt } from './dom.js';
-import { COLORS } from './board.js';
+import { COLORS, invalidate } from './board.js';
 import { renderTop, renderGoals, renderTools, refresh } from './panels.js';
 
 // ---------- panneaux ----------
@@ -56,7 +56,7 @@ export function closeAll() {
   returnFocus?.focus({ preventScroll: true }); returnFocus = null;
 }
 
-export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); }
+export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); invalidate(); }
 
 export function addSheet(row, i) {
   const lv = CUR.level, L = lay(), r = ROW_DEF.find(x => x.key === row);

@@ -191,6 +191,14 @@ function drawBrick(b, s, st, label, extra) {
   }
 }
 
+// Hors run et sans particule, le plateau ne bouge pas : on ne le redessine qu'après un changement signalé.
+let dirty = true;
+export const invalidate = () => { dirty = true; };
+export function drawIfNeeded() {
+  if (!dirty && !RUN && !particles.length && !bursts.length) return;
+  dirty = false; draw();
+}
+
 export function draw() {
   ctx.clearRect(0, 0, W, H);
   const L = lay(), lv = CUR.level;
