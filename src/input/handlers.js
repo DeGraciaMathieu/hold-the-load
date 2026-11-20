@@ -10,4 +10,5 @@ export function bindInput(on) {
   document.getElementById('speed').onclick = on.speed;
   document.getElementById('scrim').onclick = on.scrim;
   window.addEventListener('resize', on.resize);
+  window.addEventListener('keydown', e => { if (e.key === 'Escape') on.escape(); });
 }

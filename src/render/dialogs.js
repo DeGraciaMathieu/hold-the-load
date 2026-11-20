@@ -29,10 +29,29 @@ export function toast(msg, action) {
   while (box.children.length > TOAST_MAX) box.firstChild.remove();
   setTimeout(() => el.remove(), action ? TOAST_ACTION_MS : TOAST_MS);
 }
-export function openSheet(html, after) { $('sheet').innerHTML = html; $('sheet').classList.add('on'); $('scrim').classList.add('on'); if (after) after($('sheet')); }
-// La modale de résultat ne se ferme que par ses boutons : un appui sur le fond ne doit pas annuler une faillite.
-export function closeFromScrim() { if (!$('modal').classList.contains('on')) closeAll(); }
-export function closeAll() { $('sheet').classList.remove('on'); $('modal').classList.remove('on'); $('scrim').classList.remove('on'); }
+// Feuille et modale fermées sont inertes : hors de l'ordre de tabulation et inactivables.
+let returnFocus = null;
+function openLayer(el, focusIdx) {
+  if (!returnFocus) returnFocus = document.activeElement;
+  el.inert = false; el.classList.add('on'); $('scrim').classList.add('on');
+  const btns = el.querySelectorAll('button');
+  (btns[focusIdx] || btns[0])?.focus({ preventScroll: true });
+}
+export function openSheet(html, after) {
+  const sheet = $('sheet');
+  // une feuille redessinée après un réglage garde le focus sur le même bouton
+  const focusIdx = [...sheet.querySelectorAll('button')].indexOf(document.activeElement);
+  sheet.innerHTML = html;
+  if (after) after(sheet);
+  openLayer(sheet, focusIdx);
+}
+// Fond et Échap : la modale de résultat ne se ferme que par ses boutons, pour qu'une faillite ne puisse pas être annulée.
+export function dismiss() { if (!$('modal').classList.contains('on')) closeAll(); }
+export function closeAll() {
+  for (const el of [$('sheet'), $('modal')]) { el.classList.remove('on'); el.inert = true; }
+  $('scrim').classList.remove('on');
+  returnFocus?.focus({ preventScroll: true }); returnFocus = null;
+}
 
 export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); }
 
@@ -115,7 +134,7 @@ function diagHtml(res) {
   return h;
 }
 function row(k, v, t, ok) { return `<div class="row"><span>${k}</span><span>${v} ${ok == null ? '' : `<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✕'}</span>`} <span style="color:#7a7266">${t}</span></span></div>`; }
-function showModal(html, bind) { $('modal').innerHTML = html; $('modal').classList.add('on'); $('scrim').classList.add('on'); bind && bind($('modal')); }
+function showModal(html, bind) { $('modal').innerHTML = html; bind && bind($('modal')); openLayer($('modal')); }
 
 export function showResult(res) {
   const lv = CUR.level, g = lv.goals, met = goalsMet(lv, res);
