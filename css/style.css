@@ -94,11 +94,21 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 12px calc(1
 /* Écran large ou téléphone en paysage : plateau à gauche, mission et commandes à droite, plus de barre fixe en bas. */
 @media (min-width: 900px), (orientation: landscape) and (max-height: 520px) {
   body { padding-bottom: 16px; }
-  .wrap { max-width: 1120px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
-  .side { order: 2; position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; padding-bottom: 6px; }
-  .stage { order: 1; }
+  .wrap { max-width: 1120px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: "head head" "stage side"; gap: 16px 24px; align-items: start; }
+  .wrap > header { grid-area: head; }
+  /* le plateau parle le même langage que la carte mission */
+  .stage { grid-area: stage; background: var(--card); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink); padding: 12px 14px; }
+  .stage #board { margin-top: 0; }
+  .stage .hint { text-align: left; }
+  .stage #hint { border-top: 1.5px dashed #cfc6b4; padding-top: 8px; margin-top: 8px; }
+  /* colonne de droite : un seul rythme, porté par le gap */
+  .side { grid-area: side; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; padding-bottom: 6px; }
+  .side #top > *, .side .tools, .side footer { margin: 0; }
+  .side .tools { display: grid; gap: 6px; }
+  .side .tools:empty { display: none; }
+  .side .chip { text-align: left; }
   /* collée en bas de la colonne quand celle-ci défile (paysage) : Lancer reste accessible */
-  footer { position: sticky; bottom: 0; padding: 8px 0 0; margin-top: 2px; background: var(--paper); }
+  footer { position: sticky; bottom: 0; padding: 8px 0 0; background: var(--paper); }
 }
 .keys { display: none; }
 @media (hover: hover) and (min-width: 900px) {
