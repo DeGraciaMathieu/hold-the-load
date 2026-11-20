@@ -11,6 +11,7 @@ import { drawIfNeeded, invalidate, setHover } from '../render/board.js';
 import { particles, clearParticles, spawn, spawnJob, stepParticles } from '../render/particles.js';
 import { renderGoals, refresh, renderCards, liveGoals } from '../render/panels.js';
 import { toast, addSheet, editSheet, showResult, blockedByRun, layerOpen } from '../render/dialogs.js';
+import { C } from '../render/theme.js';
 
 // ---------- intentions du joueur ----------
 function slotAt(x, y) {
@@ -88,7 +89,7 @@ export function frame(now) {
       while (RUN.logN < S.log.length) toast(S.log[RUN.logN++].msg);
       const tk = RUN.tk;
       RUN.spawnAcc += Math.min(70, 10 + (tk.T + tk.bots) / 30) * dt;
-      while (RUN.spawnAcc >= 1) { RUN.spawnAcc--; const p = spawn(); if (p) particles.push({ ...p, seg: 0, prog: 0, x: p.pts[0].x, y: p.pts[0].y, alpha: 1, color: p.bot ? '#8e44ad' : '#1d1b18' }); }
+      while (RUN.spawnAcc >= 1) { RUN.spawnAcc--; const p = spawn(); if (p) particles.push({ ...p, seg: 0, prog: 0, x: p.pts[0].x, y: p.pts[0].y, alpha: 1, color: p.bot ? C.bot : C.ink }); }
       const jobs = tk.drained.write + tk.drained.upload + tk.drained.pay;
       if (jobs > 0) { RUN.jobAcc += Math.min(12, jobs / DT / 40) * dt; while (RUN.jobAcc >= 1) { RUN.jobAcc--; spawnJob(); } }
       liveGoals();

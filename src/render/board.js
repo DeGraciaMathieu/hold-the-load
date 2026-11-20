@@ -6,17 +6,16 @@ import { CUR, RUN, lay, regionsOf, mixNow, hasPay } from '../state/context.js';
 import { fmt } from './dom.js';
 import { ctx, W, H, G, FONT, center, placed, rr, tempSlots } from './geometry.js';
 import { particles, bursts } from './particles.js';
+import { C, BRICK, REGION, CT } from './theme.js';
 
-export const COLORS = { lb: '#f4a259', cdn: '#b8a1e3', waf: '#e7a3b8', server: '#9cc3e6', autoscale: '#7fb0e0', worker: '#a9d3cf', cache: '#ef8a7c', queue: '#f2d36b',
-  pooler: '#d9c89c', breaker: '#f0b27a', db: '#8fd1a6', replica: '#c4e6cf', objstore: '#c9c3e8' };
-const REG_COLORS = { eu: '#3b6fd8', us: '#c0392b', asia: '#d18a00' };
+export { BRICK as COLORS };
 
 function icon(type, cx, cy, s) {
-  ctx.save(); ctx.strokeStyle = '#1d1b18'; ctx.fillStyle = '#1d1b18'; ctx.lineWidth = 1.7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.save(); ctx.strokeStyle = C.ink; ctx.fillStyle = C.ink; ctx.lineWidth = 1.7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   const L = (a, b, c, d) => { ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.stroke(); };
   if (type === 'server' || type === 'autoscale') {
     for (const dy of [-s * .28, s * .2]) { rr(cx - s * .5, cy + dy - s * .18, s, s * .36, 3); ctx.stroke(); ctx.beginPath(); ctx.arc(cx + s * .3, cy + dy, 1.5, 0, 7); ctx.fill(); L(cx - s * .32, cy + dy, cx, cy + dy); }
-    if (type === 'autoscale') { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx + s * .5, cy - s * .45, 6, 0, 7); ctx.fill(); ctx.stroke(); L(cx + s * .5, cy - s * .45 + 3, cx + s * .5, cy - s * .45 - 3); L(cx + s * .5 - 2.5, cy - s * .45 - 0.5, cx + s * .5, cy - s * .45 - 3); L(cx + s * .5 + 2.5, cy - s * .45 - 0.5, cx + s * .5, cy - s * .45 - 3); }
+    if (type === 'autoscale') { ctx.fillStyle = C.surface; ctx.beginPath(); ctx.arc(cx + s * .5, cy - s * .45, 6, 0, 7); ctx.fill(); ctx.stroke(); L(cx + s * .5, cy - s * .45 + 3, cx + s * .5, cy - s * .45 - 3); L(cx + s * .5 - 2.5, cy - s * .45 - 0.5, cx + s * .5, cy - s * .45 - 3); L(cx + s * .5 + 2.5, cy - s * .45 - 0.5, cx + s * .5, cy - s * .45 - 3); }
   } else if (type === 'lb') {
     L(cx - s * .5, cy, cx - s * .05, cy); L(cx - s * .05, cy, cx + s * .45, cy - s * .36); L(cx - s * .05, cy, cx + s * .45, cy + s * .36); L(cx - s * .05, cy, cx + s * .5, cy);
     ctx.beginPath(); ctx.arc(cx - s * .05, cy, 3, 0, 7); ctx.fill();
@@ -42,7 +41,7 @@ function icon(type, cx, cy, s) {
     ctx.beginPath(); ctx.ellipse(cx, cy - h * .35, w / 2, h * .14, 0, 0, 7); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx - w / 2, cy - h * .35); ctx.lineTo(cx - w / 2, cy + h * .35); ctx.ellipse(cx, cy + h * .35, w / 2, h * .14, 0, Math.PI, 0, true); ctx.lineTo(cx + w / 2, cy - h * .35); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(cx, cy, w / 2, h * .14, 0, 0, Math.PI); ctx.stroke();
-    if (type === 'replica') { ctx.font = FONT(800, 8); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('R', cx, cy - h * .1); }
+    if (type === 'replica') { ctx.font = FONT(800, CT.s); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('R', cx, cy - h * .1); }
   } else if (type === 'objstore') {
     ctx.beginPath(); ctx.moveTo(cx - s * .4, cy - s * .35); ctx.lineTo(cx + s * .4, cy - s * .35); ctx.lineTo(cx + s * .3, cy + s * .45); ctx.lineTo(cx - s * .3, cy + s * .45); ctx.closePath(); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(cx, cy - s * .35, s * .4, s * .1, 0, 0, 7); ctx.stroke();
@@ -136,19 +135,19 @@ function links() {
 }
 
 function pill(x, y, label, dot, alarm) {
-  ctx.font = FONT(800, 10);
+  ctx.font = FONT(800, CT.l);
   const lw = ctx.measureText(label).width + (dot ? 24 : 14);
-  ctx.fillStyle = '#1d1b18'; rr(x - lw / 2, y - 12 + 3, lw, 24, 12); ctx.fill();
-  ctx.fillStyle = alarm ? '#f8dcd6' : '#fff'; ctx.strokeStyle = '#1d1b18'; ctx.lineWidth = 2; rr(x - lw / 2, y - 12, lw, 24, 12); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#1d1b18'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + (dot ? 5 : 0), y + 1);
+  ctx.fillStyle = C.ink; rr(x - lw / 2, y - 12 + 3, lw, 24, 12); ctx.fill();
+  ctx.fillStyle = alarm ? C.badBg : C.surface; ctx.strokeStyle = C.ink; ctx.lineWidth = 2; rr(x - lw / 2, y - 12, lw, 24, 12); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + (dot ? 5 : 0), y + 1);
   if (dot) { ctx.beginPath(); ctx.arc(x - lw / 2 + 11, y, 3.5, 0, 7); ctx.fillStyle = dot; ctx.fill(); }
 }
 
 // Libellé Internet le plus complet qui tient entre le chrono (à gauche) et la pastille API (à droite).
 function internetLabel(T, bots, timer) {
-  ctx.font = FONT(700, 10);
+  ctx.font = FONT(700, CT.l);
   const left = G.grid.x + (timer ? ctx.measureText(timer).width + 6 : 0);
-  ctx.font = FONT(800, 10);
+  ctx.font = FONT(800, CT.l);
   const right = hasPay() ? G.api.x - (ctx.measureText('API €').width + 24) / 2 - 6 : G.grid.x + G.grid.w;
   const room = 2 * Math.min(G.internet.x - left, right - G.internet.x);
   const traffic = fmt(T) + ' r/s' + (bots ? ' + ' + fmt(bots) + ' bots' : '');
@@ -156,12 +155,12 @@ function internetLabel(T, bots, timer) {
   return ctx.measureText(full).width + 24 <= room ? full : traffic;
 }
 
-function drawLink(a, b, alpha) { ctx.save(); ctx.strokeStyle = `rgba(29,27,24,${alpha})`; ctx.lineWidth = 1.3; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.restore(); }
+function drawLink(a, b, alpha) { ctx.save(); ctx.strokeStyle = C.ink; ctx.globalAlpha = alpha; ctx.lineWidth = 1.3; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.restore(); }
 
 function fitText(txt, x, y, maxW, w, size) {
   let sz = size;
   ctx.font = FONT(w, sz);
-  while (ctx.measureText(txt).width > maxW && sz > 5.6) { sz -= 0.4; ctx.font = FONT(w, sz); }
+  while (ctx.measureText(txt).width > maxW && sz > CT.s) { sz -= 0.4; ctx.font = FONT(w, sz); }
   while (ctx.measureText(txt).width > maxW && txt.length > 3) txt = txt.slice(0, -2) + '…';
   ctx.fillText(txt, x, y);
 }
@@ -169,26 +168,28 @@ function drawBrick(b, s, st, label, extra) {
   const lift = extra && extra.lift ? LIFT : 0;
   if (lift) s = { ...s, y: s.y - lift };
   const dead = st && st.dead;
-  ctx.fillStyle = '#1d1b18'; rr(s.x, s.y + 3 + lift, s.w, s.h, 11); ctx.fill();
-  ctx.fillStyle = dead ? '#c9c2b4' : (extra && extra.temp ? '#dfeaf5' : COLORS[b.type]);
-  ctx.strokeStyle = '#1d1b18'; ctx.lineWidth = 2; rr(s.x, s.y, s.w, s.h, 11); ctx.fill(); ctx.stroke();
-  if (st && ((st.load >= 1 && !st.noBar && !st.good) || st.alarm)) { ctx.save(); ctx.strokeStyle = '#d64534'; ctx.lineWidth = 3; ctx.globalAlpha = .5 + .5 * Math.sin(performance.now() / 120); rr(s.x - 3, s.y - 3, s.w + 6, s.h + 6, 13); ctx.stroke(); ctx.restore(); }
+  ctx.fillStyle = C.ink; rr(s.x, s.y + 3 + lift, s.w, s.h, CT.r); ctx.fill();
+  ctx.fillStyle = dead ? C.dead : (extra && extra.temp ? C.temp : BRICK[b.type]);
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2; rr(s.x, s.y, s.w, s.h, CT.r); ctx.fill(); ctx.stroke();
+  if (st && ((st.load >= 1 && !st.noBar && !st.good) || st.alarm)) { ctx.save(); ctx.strokeStyle = C.bad; ctx.lineWidth = 3; ctx.globalAlpha = .5 + .5 * Math.sin(performance.now() / 120); rr(s.x - 3, s.y - 3, s.w + 6, s.h + 6, CT.r + 3); ctx.stroke(); ctx.restore(); }
   icon(b.type, s.x + s.w / 2, s.y + 17, 18);
-  ctx.fillStyle = '#1d1b18'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  fitText(label, s.x + s.w / 2, s.y + 38, s.w - 6, 800, 8.5);
-  const line = st ? st.text : (extra && extra.sub) || '';
-  ctx.fillStyle = st && (st.alarm || st.dead) ? '#a5281b' : '#3b372f';
-  fitText(line, s.x + s.w / 2, s.y + 50, s.w - 6, 600, 7.6);
-  if (b.locked) { ctx.font = FONT(800, 8); ctx.fillText('🔒', s.x + 8, s.y + 11); }
+  ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  fitText(label, s.x + s.w / 2, s.y + 38, s.w - 6, 800, CT.m);
+  let line = st ? st.text : (extra && extra.sub) || '';
+  // case étroite : la ligne de réglage ne tient pas à la plus petite taille, on ne garde que le prix
+  if (!st && extra && extra.price) { ctx.font = FONT(600, CT.s); if (ctx.measureText(line).width > s.w - 6) line = extra.price; }
+  ctx.fillStyle = st && (st.alarm || st.dead) ? C.alarm : C.text2;
+  fitText(line, s.x + s.w / 2, s.y + 50, s.w - 6, 600, CT.s);
+  if (b.locked) { ctx.font = FONT(800, CT.s); ctx.fillText('🔒', s.x + 8, s.y + 11); }
   if (extra && extra.region) {
-    ctx.font = FONT(800, 7); const t = REGION_SHORT[extra.region]; const tw = ctx.measureText(t).width + 6;
-    ctx.fillStyle = REG_COLORS[extra.region]; rr(s.x + s.w - tw - 3, s.y + 3, tw, 11, 4); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(t, s.x + s.w - tw / 2 - 3, s.y + 9); ctx.textBaseline = 'alphabetic';
+    ctx.font = FONT(800, CT.s); const t = REGION_SHORT[extra.region]; const tw = ctx.measureText(t).width + 6;
+    ctx.fillStyle = REGION[extra.region]; rr(s.x + s.w - tw - 3, s.y + 3, tw, 11, 5.5); ctx.fill();
+    ctx.fillStyle = C.surface; ctx.textBaseline = 'middle'; ctx.fillText(t, s.x + s.w - tw / 2 - 3, s.y + 9); ctx.textBaseline = 'alphabetic';
   }
   if (st && !st.noBar && !st.dead && st.load != null) {
     const bw = s.w - 14, l = Math.min(1, st.load);
-    ctx.fillStyle = 'rgba(29,27,24,.15)'; rr(s.x + 7, s.y + s.h + 6, bw, 4, 2); ctx.fill();
-    ctx.fillStyle = st.good ? '#2f9e5b' : st.load >= 1 ? '#d64534' : st.load > .75 ? '#e08a1e' : '#2f9e5b';
+    ctx.fillStyle = C.inkFaint; rr(s.x + 7, s.y + s.h + 6, bw, 4, 2); ctx.fill();
+    ctx.fillStyle = st.good ? C.ok : st.load >= 1 ? C.bad : st.load > .75 ? C.warn : C.ok;
     rr(s.x + 7, s.y + s.h + 6, Math.max(2, bw * l), 4, 2); ctx.fill();
   }
 }
@@ -215,14 +216,14 @@ export function draw() {
   const tk = RUN && RUN.tk;
   const T = tk ? tk.T : lv.rps * lv.profile(0);
   const timer = RUN && tk ? Math.floor(tk.t) + '/' + lv.duration + ' s' : '';
-  pill(G.internet.x, G.internet.y, internetLabel(T, tk && tk.bots, timer), RUN ? (tk && tk.bots ? '#d64534' : '#2f9e5b') : '#7a7266', tk && tk.bots > 0);
-  if (hasPay()) { const bad = tk && tk.api && (tk.api.lat > API_BAD_LAT || tk.api.err > API_BAD_ERR); pill(G.api.x, G.api.y, 'API €', bad ? '#d64534' : tk ? '#2f9e5b' : '#7a7266', bad); }
+  pill(G.internet.x, G.internet.y, internetLabel(T, tk && tk.bots, timer), RUN ? (tk && tk.bots ? C.bad : C.ok) : C.muted, tk && tk.bots > 0);
+  if (hasPay()) { const bad = tk && tk.api && (tk.api.lat > API_BAD_LAT || tk.api.err > API_BAD_ERR); pill(G.api.x, G.api.y, 'API €', bad ? C.bad : tk ? C.ok : C.muted, bad); }
   const letters = 'ABCDE';
   let srvIdx = 0;
   const regs = regionsOf(lv);
   for (const r of ROW_DEF) {
     const R = G.rows[r.key];
-    ctx.fillStyle = '#7a7266'; ctx.font = FONT(600, 8.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = C.muted; ctx.font = FONT(600, CT.m); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     if (G.gutter) { ctx.textBaseline = 'middle'; ctx.fillText(r.label, R.labelX, R.labelY); }
     else ctx.fillText(r.label, R.slots[0].x, R.labelY + 8);
     R.slots.forEach((s, i) => {
@@ -238,13 +239,13 @@ export function draw() {
         // case vide survolée : elle devient un bouton (fond carte, bord encre, ombre), le + passe à l'encre
         if (hovered(r.key, i)) {
           const y = s.y - LIFT;
-          ctx.fillStyle = '#1d1b18'; rr(s.x, s.y + 3, s.w, s.h, 11); ctx.fill();
-          ctx.fillStyle = '#fffdf8'; ctx.strokeStyle = '#1d1b18'; ctx.lineWidth = 1.5; rr(s.x, y, s.w, s.h, 11); ctx.fill(); ctx.stroke();
-          ctx.fillStyle = '#1d1b18'; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, y + s.h / 2);
+          ctx.fillStyle = C.ink; rr(s.x, s.y + 3, s.w, s.h, CT.r); ctx.fill();
+          ctx.fillStyle = C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; rr(s.x, y, s.w, s.h, CT.r); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = C.ink; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, y + s.h / 2);
           return;
         }
-        ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = 'rgba(29,27,24,.3)'; ctx.lineWidth = 1.4; rr(s.x, s.y, s.w, s.h, 11); ctx.stroke(); ctx.restore();
-        if (!RUN) { ctx.fillStyle = 'rgba(29,27,24,.3)'; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, s.y + s.h / 2); }
+        ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = C.inkSoft; ctx.lineWidth = 1.4; rr(s.x, s.y, s.w, s.h, CT.r); ctx.stroke(); ctx.restore();
+        if (!RUN) { ctx.fillStyle = C.inkSoft; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, s.y + s.h / 2); }
         return;
       }
       const st = liveNode(b, r.key, i);
@@ -252,14 +253,14 @@ export function draw() {
       if (b.type === 'server') label = 'SRV ' + letters[srvIdx++];
       if (b.type === 'replica' && RUN && RUN.tk && RUN.tk.primaryId === r.key + i) label = 'PRIMAIRE';
       if (b.type === 'db' && b.opts && b.opts.legacy) label = 'ANCIENNE';
-      drawBrick(b, s, st, label, { sub: (optSummary(b) ? optSummary(b) + ' · ' : '') + brickCost(b) + '€', region: regs && !GLOBAL.includes(b.type) ? (b.region || regs[0]) : null, lift: hovered(r.key, i) });
+      drawBrick(b, s, st, label, { sub: (optSummary(b) ? optSummary(b) + ' · ' : '') + brickCost(b) + '€', price: brickCost(b) + '€', region: regs && !GLOBAL.includes(b.type) ? (b.region || regs[0]) : null, lift: hovered(r.key, i) });
     });
   }
   for (const p of particles) { ctx.beginPath(); ctx.arc(p.x, p.y, p.bot ? 2.4 : 2.8, 0, 7); ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha; ctx.fill(); ctx.globalAlpha = 1; }
   for (const b of bursts) {
-    ctx.save(); ctx.globalAlpha = 1 - b.age / .5; ctx.strokeStyle = b.color || '#d64534'; ctx.lineWidth = 2;
+    ctx.save(); ctx.globalAlpha = 1 - b.age / .5; ctx.strokeStyle = b.color || C.bad; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(b.x - 4, b.y - 4); ctx.lineTo(b.x + 4, b.y + 4); ctx.moveTo(b.x + 4, b.y - 4); ctx.lineTo(b.x - 4, b.y + 4); ctx.stroke();
     ctx.beginPath(); ctx.arc(b.x, b.y, 4 + b.age * 20, 0, 7); ctx.stroke(); ctx.restore();
   }
-  if (timer) { ctx.font = FONT(700, 10); ctx.textAlign = 'left'; ctx.fillStyle = '#1d1b18'; ctx.textBaseline = 'middle'; ctx.fillText(timer, G.grid.x, G.internet.y); }
+  if (timer) { ctx.font = FONT(700, CT.l); ctx.textAlign = 'left'; ctx.fillStyle = C.ink; ctx.textBaseline = 'middle'; ctx.fillText(timer, G.grid.x, G.internet.y); }
 }
