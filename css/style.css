@@ -94,7 +94,7 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 12px calc(1
 /* Écran large ou téléphone en paysage : plateau à gauche, mission et commandes à droite, plus de barre fixe en bas. */
 @media (min-width: 900px), (orientation: landscape) and (max-height: 520px) {
   body { padding-bottom: 16px; }
-  .wrap { max-width: 1120px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: "head head" "stage side"; gap: 16px 24px; align-items: start; }
+  .wrap { max-width: 1440px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; grid-template-areas: "head head" "stage side"; gap: 16px 24px; align-items: start; }
   .wrap > header { grid-area: head; }
   /* le plateau parle le même langage que la carte mission */
   .stage { grid-area: stage; background: var(--card); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink); padding: 12px 14px; }
