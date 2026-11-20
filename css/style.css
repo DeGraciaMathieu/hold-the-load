@@ -116,6 +116,9 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 12px calc(1
 }
 @media (orientation: landscape) and (max-height: 520px) {
   .wrap { grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; }
+  /* l'en-tête commun pousse la colonne sous le pli : la colonne défile avec la page et la barre Lancer se fixe en bas à droite */
+  .side { position: static; max-height: none; overflow: visible; }
+  footer { position: fixed; left: auto; right: 12px; width: 320px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
 }
 
 /* Run sur téléphone en portrait : la carte mission se replie sur le titre et la disponibilité en direct pour laisser voir tout le plateau. */
