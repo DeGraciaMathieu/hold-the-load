@@ -10,7 +10,7 @@ import { G, K, layout } from '../render/geometry.js';
 import { drawIfNeeded, invalidate, setHover } from '../render/board.js';
 import { particles, clearParticles, spawn, spawnJob, stepParticles } from '../render/particles.js';
 import { renderGoals, refresh, renderCards, liveGoals } from '../render/panels.js';
-import { toast, addSheet, editSheet, showResult, blockedByRun, layerOpen } from '../render/dialogs.js';
+import { toast, addSheet, editSheet, showResult, blockedByRun, layerOpen, closeAll } from '../render/dialogs.js';
 import { C } from '../render/theme.js';
 
 // ---------- intentions du joueur ----------
@@ -45,6 +45,7 @@ export function relayout() { if (layout()) { clearParticles(); invalidate(); } }
 
 // ---------- run ----------
 function startRun() {
+  closeAll(); // l'inspecteur reste ouvert sur desktop : on le ferme avant de lancer
   const S = makeSim(CUR.level, lay(), sets());
   setRun({ S, tk: null, startedAt: performance.now(), speed: SPEED_FAST, acc: 0, logN: 0, spawnAcc: 0, jobAcc: 0 });
   stepSim(S); RUN.tk = S.ticks[S.ticks.length - 1];

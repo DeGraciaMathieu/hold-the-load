@@ -23,6 +23,7 @@
 html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font); }
 body { background-image: radial-gradient(var(--dot) 1px, transparent 1px); background-size: 14px 14px; min-height: 100vh; padding-bottom: 150px; }
 button { font-family: inherit; color: inherit; }
+:focus-visible { outline: var(--b-2) solid var(--ink); outline-offset: var(--s-0); }
 .wrap { max-width: 480px; margin: 0 auto; padding: var(--s-3) var(--s-3) 0; }
 header { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
 h1 { font-size: var(--t-4); margin: 0; letter-spacing: -.5px; font-weight: 800; }
@@ -80,7 +81,8 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: var(--s-2) var(
 .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 11; transform: translateY(105%); transition: transform .22s ease; background: var(--card); border-top: var(--b-2) solid var(--ink);
   border-radius: var(--r-3) var(--r-3) 0 0; padding: var(--s-3) var(--s-3) calc(var(--s-4) + env(safe-area-inset-bottom)); max-width: 480px; margin: 0 auto; max-height: 82vh; max-height: 82dvh; overflow-y: auto; overscroll-behavior: contain; }
 .sheet.on { transform: none; }
-.sheet h3 { margin: var(--s-0) 0 var(--s-2); font-size: var(--t-2); text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); }
+.sheet h3 { margin: var(--s-0) 0 var(--s-3); font-size: var(--t-3); display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); }
+.sheet h3 small { display: block; font-size: var(--t-1); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: var(--s-0); }
 .sheet h3 .x { flex: 0 0 44px; height: 44px; margin: calc(-1 * var(--s-3)) calc(-1 * var(--s-3)) calc(-1 * var(--s-3)) 0; border: 0; background: none; font: 800 var(--t-3) var(--font); cursor: pointer; }
 .sheet .desc { font-size: var(--t-1); line-height: 1.45; margin: 0 0 var(--s-3); color: var(--text-2); }
 .opt { display: flex; gap: var(--s-3); align-items: center; width: 100%; text-align: left; border: var(--b-2) solid var(--ink); border-radius: var(--r-2); background: var(--surface); padding: var(--s-2) var(--s-3); margin-bottom: var(--s-2); box-shadow: var(--sh); cursor: pointer; }
@@ -133,6 +135,16 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: var(--s-2) var(
   .side .chip { text-align: left; }
   /* collée en bas de la colonne quand celle-ci défile (paysage) : Lancer reste accessible */
   footer { position: sticky; bottom: 0; padding: var(--s-2) 0 0; background: var(--paper); }
+  /* inspecteur : la feuille prend la place du contenu de la colonne, sans voile, le plateau reste visible et cliquable */
+  .sheet { position: static; transform: none; transition: none; display: none; max-width: none; max-height: none; margin: 0; overflow: visible;
+    border: var(--b-2) solid var(--ink); border-radius: var(--r-3); box-shadow: var(--sh); padding: var(--s-4); }
+  .sheet.on { display: block; }
+  .inspecting .side > :not(.sheet):not(footer), .inspecting .scrim { display: none; }
+  .sheet .desc, .opt p, .grp .help, .seg button { font-size: var(--t-2); }
+  /* option : prix sur la ligne du nom, description sur toute la largeur */
+  .opt { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "sw name price" "sw desc desc"; column-gap: var(--s-3); row-gap: var(--s-1); align-items: start; padding: var(--s-3); }
+  .opt > span:nth-child(2) { display: contents; }
+  .opt .sw { grid-area: sw; } .opt b { grid-area: name; font-size: var(--t-3); } .opt p { grid-area: desc; margin: 0; } .opt .price { grid-area: price; }
 }
 .keys { display: none; }
 @media (hover: hover) and (min-width: 900px) {
