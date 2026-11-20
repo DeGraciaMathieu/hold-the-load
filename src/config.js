@@ -125,6 +125,7 @@ export const GEN_RUSH_READS_TO_WRITE = 0.7; // part des lectures devenue écritu
 
 // ---- Affichage lié aux règles
 export const SPEED_FAST = 2; // vitesse de lecture d'un run au lancement (×2), ×1 sinon
+export const SKIP_GUARD_MS = 800; // ms après le lancement pendant lesquelles « Passer » est ignoré (double appui)
 export const QUEUE_GAUGE_MAX = 4000; // tâches en file pour une jauge pleine
 export const POOLER_GAUGE_MAX = 150; // connexions pour une jauge pleine quand il n'y a pas de base
 export const DIAG_MIN_SHARE = 0.0005; // part minimale d'une cause d'échec pour l'afficher
