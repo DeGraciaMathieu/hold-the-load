@@ -7,6 +7,9 @@ const board = $('board');
 export const ctx = board.getContext('2d');
 export let W = 360, H = 460, G = {};
 export const FONT = (w, s) => `${w} ${s}px "JetBrains Mono", ui-monospace, monospace`;
+const COLS = Math.max(...ROW_DEF.map(r => r.slots)); // toutes les rangées partagent cette grille
+const LABEL_GUTTER = 104; // px de libellés de rangée à gauche quand le plateau est large
+const GUTTER_MIN_W = 560; // largeur de plateau à partir de laquelle les libellés passent dans la gouttière
 let dpr0 = 0;
 // Ne recalcule (et ne réalloue le canvas) que si la largeur ou la densité d'écran a changé ; renvoie true dans ce cas.
 export function layout() {
@@ -14,13 +17,16 @@ export function layout() {
   if (G.rows && w === W && dpr === dpr0) return false;
   W = w; dpr0 = dpr;
   const pad = 6, gap = 6;
-  const sw = Math.min(96, (W - pad * 2 - gap * 4) / 5), sh = 58;
-  G = { sw, sh, rows: {}, internet: { x: W / 2 - 20, y: 24 }, api: { x: W - 46, y: 24 } };
+  const gutter = W >= GUTTER_MIN_W ? LABEL_GUTTER : 0;
+  const sw = Math.min(96, (W - pad * 2 - gutter - gap * (COLS - 1)) / COLS), sh = 58;
+  const gridW = COLS * sw + (COLS - 1) * gap;
+  const bx = (W - gutter - gridW) / 2, gx = bx + gutter; // bloc libellés + grille centré
+  const rowTop = gutter ? 0 : 12; // en étroit, le libellé passe au-dessus des cases
+  G = { sw, sh, gutter, rows: {}, grid: { x: gx, w: gridW }, internet: { x: gx + gridW / 2, y: 24 }, api: { x: gx + gridW - 30, y: 24 } };
   let y = 58;
   for (const r of ROW_DEF) {
-    const total = r.slots * sw + (r.slots - 1) * gap, x0 = (W - total) / 2;
-    G.rows[r.key] = { labelY: y, slots: [...Array(r.slots)].map((_, i) => ({ x: x0 + i * (sw + gap), y: y + 12, w: sw, h: sh })) };
-    y += 12 + sh + 22;
+    G.rows[r.key] = { labelX: bx, labelY: gutter ? y + sh / 2 : y, slots: [...Array(r.slots)].map((_, i) => ({ x: gx + i * (sw + gap), y: y + rowTop, w: sw, h: sh })) };
+    y += rowTop + sh + 22;
   }
   H = y - 6;
   board.style.height = H + 'px'; board.width = W * dpr; board.height = H * dpr;

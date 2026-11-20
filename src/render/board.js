@@ -147,9 +147,9 @@ function pill(x, y, label, dot, alarm) {
 // Libellé Internet le plus complet qui tient entre le chrono (à gauche) et la pastille API (à droite).
 function internetLabel(T, bots, timer) {
   ctx.font = FONT(700, 10);
-  const left = timer ? 4 + ctx.measureText(timer).width + 6 : 4;
+  const left = G.grid.x + (timer ? ctx.measureText(timer).width + 6 : 0);
   ctx.font = FONT(800, 10);
-  const right = hasPay() ? G.api.x - (ctx.measureText('API €').width + 24) / 2 - 6 : W - 4;
+  const right = hasPay() ? G.api.x - (ctx.measureText('API €').width + 24) / 2 - 6 : G.grid.x + G.grid.w;
   const room = 2 * Math.min(G.internet.x - left, right - G.internet.x);
   const traffic = fmt(T) + ' r/s' + (bots ? ' + ' + fmt(bots) + ' bots' : '');
   const full = 'INTERNET · ' + traffic;
@@ -219,7 +219,8 @@ export function draw() {
   for (const r of ROW_DEF) {
     const R = G.rows[r.key];
     ctx.fillStyle = '#7a7266'; ctx.font = FONT(600, 8.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(r.label, R.slots[0].x, R.labelY + 8);
+    if (G.gutter) { ctx.textBaseline = 'middle'; ctx.fillText(r.label, R.labelX, R.labelY); }
+    else ctx.fillText(r.label, R.slots[0].x, R.labelY + 8);
     R.slots.forEach((s, i) => {
       const b = L[r.key][i];
       if (!b) {
@@ -249,5 +250,5 @@ export function draw() {
     ctx.beginPath(); ctx.moveTo(b.x - 4, b.y - 4); ctx.lineTo(b.x + 4, b.y + 4); ctx.moveTo(b.x + 4, b.y - 4); ctx.lineTo(b.x - 4, b.y + 4); ctx.stroke();
     ctx.beginPath(); ctx.arc(b.x, b.y, 4 + b.age * 20, 0, 7); ctx.stroke(); ctx.restore();
   }
-  if (timer) { ctx.font = FONT(700, 10); ctx.textAlign = 'left'; ctx.fillStyle = '#1d1b18'; ctx.textBaseline = 'middle'; ctx.fillText(timer, 4, G.internet.y); }
+  if (timer) { ctx.font = FONT(700, 10); ctx.textAlign = 'left'; ctx.fillStyle = '#1d1b18'; ctx.textBaseline = 'middle'; ctx.fillText(timer, G.grid.x, G.internet.y); }
 }
