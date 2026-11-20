@@ -51,7 +51,7 @@ export function editSheet(row, i) {
   const regs = regionsOf(lv);
   const render = () => {
     const o = { ...defaultOpts(b.type), ...(b.opts || {}) };
-    let html = `<h3><span>${CATALOG[b.type].name}</span><span>${brickCost(b)} € ✕</span></h3><p class="desc">${CATALOG[b.type].desc}</p>`;
+    let html = `<h3><span>${CATALOG[b.type].name} · ${brickCost(b)} €</span><span>✕</span></h3><p class="desc">${CATALOG[b.type].desc}</p>`;
     for (const d of OPT_DEFS[b.type] || []) {
       if (d.k === 'legacy') continue;
       if (b.type === 'server' && d.k === 'size' && !lv.sizes) continue;
