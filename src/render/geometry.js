@@ -14,7 +14,7 @@ export function layout() {
   if (G.rows && w === W && dpr === dpr0) return false;
   W = w; dpr0 = dpr;
   const pad = 6, gap = 6;
-  const sw = Math.min(78, (W - pad * 2 - gap * 4) / 5), sh = 58;
+  const sw = Math.min(96, (W - pad * 2 - gap * 4) / 5), sh = 58;
   G = { sw, sh, rows: {}, internet: { x: W / 2 - 20, y: 24 }, api: { x: W - 46, y: 24 } };
   let y = 58;
   for (const r of ROW_DEF) {
