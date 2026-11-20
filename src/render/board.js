@@ -166,8 +166,10 @@ function fitText(txt, x, y, maxW, w, size) {
   ctx.fillText(txt, x, y);
 }
 function drawBrick(b, s, st, label, extra) {
+  const lift = extra && extra.lift ? LIFT : 0;
+  if (lift) s = { ...s, y: s.y - lift };
   const dead = st && st.dead;
-  ctx.fillStyle = '#1d1b18'; rr(s.x, s.y + 3, s.w, s.h, 11); ctx.fill();
+  ctx.fillStyle = '#1d1b18'; rr(s.x, s.y + 3 + lift, s.w, s.h, 11); ctx.fill();
   ctx.fillStyle = dead ? '#c9c2b4' : (extra && extra.temp ? '#dfeaf5' : COLORS[b.type]);
   ctx.strokeStyle = '#1d1b18'; ctx.lineWidth = 2; rr(s.x, s.y, s.w, s.h, 11); ctx.fill(); ctx.stroke();
   if (st && ((st.load >= 1 && !st.noBar && !st.good) || st.alarm)) { ctx.save(); ctx.strokeStyle = '#d64534'; ctx.lineWidth = 3; ctx.globalAlpha = .5 + .5 * Math.sin(performance.now() / 120); rr(s.x - 3, s.y - 3, s.w + 6, s.h + 6, 13); ctx.stroke(); ctx.restore(); }
@@ -195,6 +197,8 @@ function drawBrick(b, s, st, label, extra) {
 let dirty = true;
 export const invalidate = () => { dirty = true; };
 let hover = null; // case survolée à la souris, hors run
+const hovered = (row, i) => !RUN && hover?.row === row && hover?.i === i;
+const LIFT = 2; // px dont une case survolée se soulève, son ombre s'allonge d'autant
 export function setHover(slot) {
   if (hover?.row === slot?.row && hover?.i === slot?.i) return;
   hover = slot; invalidate();
@@ -231,6 +235,14 @@ export function draw() {
           drawBrick({ type: 'server' }, s, st, 'RENFORT', { temp: true });
           return;
         }
+        // case vide survolée : elle devient un bouton (fond carte, bord encre, ombre), le + passe à l'encre
+        if (hovered(r.key, i)) {
+          const y = s.y - LIFT;
+          ctx.fillStyle = '#1d1b18'; rr(s.x, s.y + 3, s.w, s.h, 11); ctx.fill();
+          ctx.fillStyle = '#fffdf8'; ctx.strokeStyle = '#1d1b18'; ctx.lineWidth = 1.5; rr(s.x, y, s.w, s.h, 11); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#1d1b18'; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, y + s.h / 2);
+          return;
+        }
         ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = 'rgba(29,27,24,.3)'; ctx.lineWidth = 1.4; rr(s.x, s.y, s.w, s.h, 11); ctx.stroke(); ctx.restore();
         if (!RUN) { ctx.fillStyle = 'rgba(29,27,24,.3)'; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, s.y + s.h / 2); }
         return;
@@ -240,10 +252,9 @@ export function draw() {
       if (b.type === 'server') label = 'SRV ' + letters[srvIdx++];
       if (b.type === 'replica' && RUN && RUN.tk && RUN.tk.primaryId === r.key + i) label = 'PRIMAIRE';
       if (b.type === 'db' && b.opts && b.opts.legacy) label = 'ANCIENNE';
-      drawBrick(b, s, st, label, { sub: (optSummary(b) ? optSummary(b) + ' · ' : '') + brickCost(b) + '€', region: regs && !GLOBAL.includes(b.type) ? (b.region || regs[0]) : null });
+      drawBrick(b, s, st, label, { sub: (optSummary(b) ? optSummary(b) + ' · ' : '') + brickCost(b) + '€', region: regs && !GLOBAL.includes(b.type) ? (b.region || regs[0]) : null, lift: hovered(r.key, i) });
     });
   }
-  if (hover && !RUN) { const s = G.rows[hover.row].slots[hover.i]; ctx.save(); ctx.strokeStyle = '#f4a259'; ctx.lineWidth = 3; rr(s.x - 3, s.y - 3, s.w + 6, s.h + 6, 13); ctx.stroke(); ctx.restore(); }
   for (const p of particles) { ctx.beginPath(); ctx.arc(p.x, p.y, p.bot ? 2.4 : 2.8, 0, 7); ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha; ctx.fill(); ctx.globalAlpha = 1; }
   for (const b of bursts) {
     ctx.save(); ctx.globalAlpha = 1 - b.age / .5; ctx.strokeStyle = b.color || '#d64534'; ctx.lineWidth = 2;
