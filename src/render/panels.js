@@ -100,6 +100,13 @@ export function refresh() {
   clearParticles();
   layout(); invalidate();
 }
+// Le footer fixe grandit avec les cartes d'action : le bas de page suit sa hauteur réelle pour ne rien masquer du plateau.
+export function watchFooter() {
+  const foot = document.querySelector('footer');
+  const fit = () => { document.body.style.paddingBottom = getComputedStyle(foot).position === 'fixed' ? foot.offsetHeight + 8 + 'px' : ''; };
+  new ResizeObserver(fit).observe(foot);
+  window.addEventListener('resize', fit);
+}
 export function renderCards() {
   const S = RUN && RUN.S, box = $('cards');
   const entries = S ? Object.entries(S.cards).filter(([k]) => (CUR.level.cards || {})[k]) : [];

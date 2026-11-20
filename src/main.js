@@ -1,7 +1,7 @@
 import { sources } from './state/context.js';
 import { draw } from './render/board.js';
 import { dismiss } from './render/dialogs.js';
-import { refresh } from './render/panels.js';
+import { refresh, watchFooter } from './render/panels.js';
 import { bindInput } from './input/handlers.js';
 import { clickBoard, switchMode, toggleRun, toggleSpeed, relayout, frame } from './loop/run.js';
 
@@ -13,5 +13,6 @@ sources.today = todayStr;
 
 bindInput({ board: clickBoard, tab: switchMode, run: toggleRun, speed: toggleSpeed, scrim: dismiss, escape: dismiss, resize: relayout });
 refresh();
+watchFooter();
 document.fonts && document.fonts.ready.then(() => draw());
 requestAnimationFrame(frame);
