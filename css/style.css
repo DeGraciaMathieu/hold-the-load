@@ -103,3 +103,8 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 12px calc(1
 @media (orientation: landscape) and (max-height: 520px) {
   .wrap { grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; }
 }
+
+/* Run sur téléphone en portrait : la carte mission se replie sur le titre et la disponibilité en direct pour laisser voir tout le plateau. */
+@media (max-width: 899px) and (orientation: portrait) {
+  .running #top, .running .tools, .running .story, .running .goal:not(#g-avail), .running .goal .t { display: none; }
+}

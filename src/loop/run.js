@@ -38,6 +38,14 @@ function startRun() {
   $('run').textContent = 'Passer ⏭'; $('run').classList.remove('go'); $('speed').style.display = ''; $('speed').textContent = '×' + SPEED_FAST;
   $('hint').textContent = 'Points noirs : requêtes. ✕ rouge : perdue. Violet : bots.';
   renderCards();
+  requestAnimationFrame(revealBoard);
+}
+// Sur téléphone, amène le bas du plateau juste au-dessus du footer fixe.
+function revealBoard() {
+  const foot = document.querySelector('footer');
+  if (getComputedStyle(foot).position !== 'fixed') return;
+  const bottom = $('board').getBoundingClientRect().bottom + window.scrollY;
+  window.scrollTo({ top: Math.max(0, bottom - (window.innerHeight - foot.offsetHeight)), behavior: 'smooth' });
 }
 function endRun() {
   const S = RUN.S;
