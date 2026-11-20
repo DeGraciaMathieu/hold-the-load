@@ -199,6 +199,10 @@ let dirty = true;
 export const invalidate = () => { dirty = true; };
 let hover = null; // case survolée à la souris, hors run
 const hovered = (row, i) => !RUN && hover?.row === row && hover?.i === i;
+let selected = null; // case ouverte dans la feuille ou l'inspecteur
+export function setSelected(slot) { selected = slot; invalidate(); }
+const isSelected = (row, i) => !RUN && selected?.row === row && selected?.i === i;
+const lifted = (row, i) => hovered(row, i) || isSelected(row, i);
 const LIFT = 2; // px dont une case survolée se soulève, son ombre s'allonge d'autant
 export function setHover(slot) {
   if (hover?.row === slot?.row && hover?.i === slot?.i) return;
@@ -237,7 +241,7 @@ export function draw() {
           return;
         }
         // case vide survolée : elle devient un bouton (fond carte, bord encre, ombre), le + passe à l'encre
-        if (hovered(r.key, i)) {
+        if (lifted(r.key, i)) {
           const y = s.y - LIFT;
           ctx.fillStyle = C.ink; rr(s.x, s.y + 3, s.w, s.h, CT.r); ctx.fill();
           ctx.fillStyle = C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; rr(s.x, y, s.w, s.h, CT.r); ctx.fill(); ctx.stroke();
@@ -253,9 +257,11 @@ export function draw() {
       if (b.type === 'server') label = 'SRV ' + letters[srvIdx++];
       if (b.type === 'replica' && RUN && RUN.tk && RUN.tk.primaryId === r.key + i) label = 'PRIMAIRE';
       if (b.type === 'db' && b.opts && b.opts.legacy) label = 'ANCIENNE';
-      drawBrick(b, s, st, label, { sub: (optSummary(b) ? optSummary(b) + ' · ' : '') + brickCost(b) + '€', price: brickCost(b) + '€', region: regs && !GLOBAL.includes(b.type) ? (b.region || regs[0]) : null, lift: hovered(r.key, i) });
+      drawBrick(b, s, st, label, { sub: (optSummary(b) ? optSummary(b) + ' · ' : '') + brickCost(b) + '€', price: brickCost(b) + '€', region: regs && !GLOBAL.includes(b.type) ? (b.region || regs[0]) : null, lift: lifted(r.key, i) });
     });
   }
+  // case ouverte dans la feuille : soulevée (voir lifted) et cerclée de pointillés
+  if (selected && !RUN) { const s = G.rows[selected.row].slots[selected.i]; ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; rr(s.x - 5, s.y - 7, s.w + 10, s.h + 12, CT.r + 4); ctx.stroke(); ctx.restore(); }
   for (const p of particles) { ctx.beginPath(); ctx.arc(p.x, p.y, p.bot ? 2.4 : 2.8, 0, 7); ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha; ctx.fill(); ctx.globalAlpha = 1; }
   for (const b of bursts) {
     ctx.save(); ctx.globalAlpha = 1 - b.age / .5; ctx.strokeStyle = b.color || C.bad; ctx.lineWidth = 2;

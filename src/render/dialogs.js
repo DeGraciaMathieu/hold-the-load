@@ -9,7 +9,7 @@ import { isDailyRecord } from '../rules/daily.js';
 import { ST, save } from '../state/store.js';
 import { CUR, RUN, sources, campLevel, newCamp, lay, sets, regionsOf, lbAlgosOf } from '../state/context.js';
 import { $, fmt } from './dom.js';
-import { COLORS, invalidate } from './board.js';
+import { COLORS, invalidate, setSelected } from './board.js';
 import { renderTop, renderGoals, renderTools, refresh } from './panels.js';
 
 // ---------- panneaux ----------
@@ -42,8 +42,10 @@ function openLayer(el, focusIdx) {
   const btns = el.querySelectorAll('button');
   (btns[focusIdx] || btns[0])?.focus({ preventScroll: true });
 }
-export function openSheet(html, after) {
+// slot : case du plateau concernée, marquée sur le plateau tant que la feuille est ouverte
+export function openSheet(html, after, slot = null) {
   const sheet = $('sheet');
+  setSelected(slot); document.body.classList.add('inspecting');
   // une feuille redessinée après un réglage garde le focus sur le même bouton
   const focusIdx = [...sheet.querySelectorAll('button')].indexOf(document.activeElement);
   sheet.innerHTML = html;
@@ -55,15 +57,18 @@ export function dismiss() { if (!$('modal').classList.contains('on')) closeAll()
 export function closeAll() {
   for (const el of [$('sheet'), $('modal')]) { el.classList.remove('on'); el.inert = true; }
   $('scrim').classList.remove('on');
+  document.body.classList.remove('inspecting'); setSelected(null);
   returnFocus?.focus({ preventScroll: true }); returnFocus = null;
 }
 
 export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); invalidate(); }
 
+const slotName = (row, i) => { const r = ROW_DEF.find(x => x.key === row); return r.label.charAt(0) + r.label.slice(1).toLowerCase() + ' · case ' + (i + 1); };
+
 export function addSheet(row, i) {
   const lv = CUR.level, L = lay(), r = ROW_DEF.find(x => x.key === row);
   const types = Object.keys(CATALOG).filter(t => CATALOG[t].row === row && lv.bricks.includes(t));
-  let html = `<h3><span>Poser dans « ${r.label.toLowerCase()} »</span><button class="x" aria-label="Fermer">✕</button></h3>`;
+  let html = `<h3><span><small>Poser une brique</small>${slotName(row, i)}</span><button class="x" aria-label="Fermer">✕</button></h3>`;
   const reasons = {};
   for (const t of types) {
     if (CATALOG[t].unique && hasType(L, t)) reasons[t] = 'Déjà en place.';
@@ -81,7 +86,7 @@ export function addSheet(row, i) {
       L[row][i] = b; changed(); closeAll();
       if (CATALOG[t].opts || (regs && !GLOBAL.includes(t))) editSheet(row, i);
     });
-  });
+  }, { row, i });
 }
 
 export function editSheet(row, i) {
@@ -89,7 +94,7 @@ export function editSheet(row, i) {
   const regs = regionsOf(lv);
   const render = () => {
     const o = { ...defaultOpts(b.type), ...(b.opts || {}) };
-    let html = `<h3><span>${CATALOG[b.type].name} · ${brickCost(b)} €</span><button class="x" aria-label="Fermer">✕</button></h3><p class="desc">${CATALOG[b.type].desc}</p>`;
+    let html = `<h3><span><small>${slotName(row, i)}</small>${CATALOG[b.type].name} · ${brickCost(b)} €</span><button class="x" aria-label="Fermer">✕</button></h3><p class="desc">${CATALOG[b.type].desc}</p>`;
     for (const d of OPT_DEFS[b.type] || []) {
       if (d.k === 'legacy') continue;
       if (b.type === 'server' && d.k === 'size' && !lv.sizes) continue;
@@ -112,7 +117,7 @@ export function editSheet(row, i) {
         if (b.type === 'db' && L.data.some(x => x && x.type === 'replica')) { L.data = L.data.map(x => (x && x.type === 'replica' ? null : x)); toast('Sans base primaire, les répliques n’ont rien à copier : retirées aussi.'); }
         changed(); closeAll();
       };
-    });
+    }, { row, i });
   };
   render();
 }
