@@ -79,7 +79,7 @@ export function renderTools() {
   if (CUR.kind !== 'camp') html += `<button class="chip" id="resetBtn">↺ Repartir de zéro</button>`;
   $('tools').innerHTML = html;
   if ($('setBtn')) $('setBtn').onclick = () => !blockedByRun() && settingsSheet();
-  if ($('cardsInfo')) $('cardsInfo').onclick = () => openSheet(`<h3><span>Cartes d’action</span><span>✕</span></h3><p class="desc">Elles apparaissent pendant le run, à jouer au bon moment.</p>` + cards.map(([k, n]) => `<div class="opt"><span class="sw" style="background:#fff7e6">${n}</span><span><b>${CARDS[k].name}</b><p>${CARDS[k].desc}</p></span></div>`).join(''), el => (el.querySelector('h3 span:last-child').onclick = closeAll));
+  if ($('cardsInfo')) $('cardsInfo').onclick = () => openSheet(`<h3><span>Cartes d’action</span><button class="x" aria-label="Fermer">✕</button></h3><p class="desc">Elles apparaissent pendant le run, à jouer au bon moment.</p>` + cards.map(([k, n]) => `<div class="opt"><span class="sw" style="background:#fff7e6">${n}</span><span><b>${CARDS[k].name}</b><p>${CARDS[k].desc}</p></span></div>`).join(''), el => (el.querySelector('h3 .x').onclick = closeAll));
   if ($('resetBtn')) $('resetBtn').onclick = () => {
     if (blockedByRun()) return;
     const key = CUR.key, before = cloneLayout(lay());

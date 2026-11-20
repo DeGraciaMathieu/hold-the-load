@@ -61,7 +61,7 @@ export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); re
 export function addSheet(row, i) {
   const lv = CUR.level, L = lay(), r = ROW_DEF.find(x => x.key === row);
   const types = Object.keys(CATALOG).filter(t => CATALOG[t].row === row && lv.bricks.includes(t));
-  let html = `<h3><span>Poser dans « ${r.label.toLowerCase()} »</span><span>✕</span></h3>`;
+  let html = `<h3><span>Poser dans « ${r.label.toLowerCase()} »</span><button class="x" aria-label="Fermer">✕</button></h3>`;
   const reasons = {};
   for (const t of types) {
     if (CATALOG[t].unique && hasType(L, t)) reasons[t] = 'Déjà en place.';
@@ -71,7 +71,7 @@ export function addSheet(row, i) {
   }
   if (!types.length) html += '<p class="desc">Rien à poser ici dans cette mission.</p>';
   openSheet(html, el => {
-    el.querySelector('h3 span:last-child').onclick = closeAll;
+    el.querySelector('h3 .x').onclick = closeAll;
     el.querySelectorAll('.opt').forEach(btn => btn.onclick = () => {
       const t = btn.dataset.t; const b = { type: t, opts: defaultOpts(t) };
       const regs = regionsOf(lv); if (regs) b.region = regs[0];
@@ -87,7 +87,7 @@ export function editSheet(row, i) {
   const regs = regionsOf(lv);
   const render = () => {
     const o = { ...defaultOpts(b.type), ...(b.opts || {}) };
-    let html = `<h3><span>${CATALOG[b.type].name} · ${brickCost(b)} €</span><span>✕</span></h3><p class="desc">${CATALOG[b.type].desc}</p>`;
+    let html = `<h3><span>${CATALOG[b.type].name} · ${brickCost(b)} €</span><button class="x" aria-label="Fermer">✕</button></h3><p class="desc">${CATALOG[b.type].desc}</p>`;
     for (const d of OPT_DEFS[b.type] || []) {
       if (d.k === 'legacy') continue;
       if (b.type === 'server' && d.k === 'size' && !lv.sizes) continue;
@@ -101,7 +101,7 @@ export function editSheet(row, i) {
     if (!b.locked) html += `<button class="opt rm" id="rmB"><span class="sw" style="background:#fff">✕</span><span><b>Retirer</b><p>Libère la case.</p></span><span class="price">−${brickCost(b)} €</span></button>`;
     else html += `<p class="desc">🔒 Cette brique fait partie de l’héritage : impossible de la retirer.</p>`;
     openSheet(html, el => {
-      el.querySelector('h3 span:last-child').onclick = closeAll;
+      el.querySelector('h3 .x').onclick = closeAll;
       el.querySelectorAll('[data-k]').forEach(x => x.onclick = () => { b.opts = { ...o, [x.dataset.k]: JSON.parse(x.dataset.v) }; changed(); render(); });
       el.querySelectorAll('[data-reg]').forEach(x => x.onclick = () => { b.region = x.dataset.reg; changed(); render(); });
       const rm = el.querySelector('#rmB');
@@ -119,10 +119,10 @@ export function settingsSheet() {
   const al = CUR.level.settingsAllowed || [];
   const render = () => {
     const s = sets();
-    let html = `<h3><span>Réglages de l’appli</span><span>✕</span></h3>`;
+    let html = `<h3><span>Réglages de l’appli</span><button class="x" aria-label="Fermer">✕</button></h3>`;
     for (const k of al) { const d = SET_DEFS[k]; html += `<div class="grp"><div class="lab">${d.label}</div><div class="seg">${d.choices.map(c => `<button data-k="${k}" data-v='${JSON.stringify(c[0])}' class="${s[k] === c[0] ? 'on' : ''}">${c[1]}</button>`).join('')}</div><div class="help">${d.help[String(s[k])]}</div></div>`; }
     openSheet(html, el => {
-      el.querySelector('h3 span:last-child').onclick = () => { closeAll(); renderTools(); };
+      el.querySelector('h3 .x').onclick = () => { closeAll(); renderTools(); };
       el.querySelectorAll('[data-k]').forEach(x => x.onclick = () => { s[x.dataset.k] = JSON.parse(x.dataset.v); changed(); render(); renderTools(); });
     });
   };
