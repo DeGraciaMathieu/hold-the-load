@@ -6,7 +6,7 @@ import { resultOf } from '../rules/sim/result.js';
 import { ST, save } from '../state/store.js';
 import { CUR, RUN, setRun, lay, sets } from '../state/context.js';
 import { $ } from '../render/dom.js';
-import { G, layout } from '../render/geometry.js';
+import { G, K, layout } from '../render/geometry.js';
 import { drawIfNeeded, invalidate, setHover } from '../render/board.js';
 import { particles, clearParticles, spawn, spawnJob, stepParticles } from '../render/particles.js';
 import { renderGoals, refresh, renderCards, liveGoals } from '../render/panels.js';
@@ -14,6 +14,7 @@ import { toast, addSheet, editSheet, showResult, blockedByRun, layerOpen } from 
 
 // ---------- intentions du joueur ----------
 function slotAt(x, y) {
+  x /= K; y /= K; // pixels CSS → coordonnées du plateau
   for (const r of ROW_DEF) {
     const i = G.rows[r.key].slots.findIndex(s => x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h);
     if (i >= 0) return { row: r.key, i };
