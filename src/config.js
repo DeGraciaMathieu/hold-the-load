@@ -129,3 +129,6 @@ export const SKIP_GUARD_MS = 800; // ms après le lancement pendant lesquelles �
 export const QUEUE_GAUGE_MAX = 4000; // tâches en file pour une jauge pleine
 export const POOLER_GAUGE_MAX = 150; // connexions pour une jauge pleine quand il n'y a pas de base
 export const DIAG_MIN_SHARE = 0.0005; // part minimale d'une cause d'échec pour l'afficher
+export const TOAST_MS = 2400; // durée d'affichage d'un message
+export const TOAST_ACTION_MS = 5000; // durée d'un message qui propose une action (Annuler)
+export const TOAST_MAX = 3; // messages empilés au plus

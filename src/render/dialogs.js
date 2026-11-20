@@ -1,7 +1,7 @@
 import { ROW_DEF, CATALOG, GLOBAL, OPT_DEFS, SET_DEFS } from '../content/catalog.js';
 import { LEVELS } from '../content/levels.js';
 import { REGION_NAMES, REASONS } from '../content/texts.js';
-import { DIAG_MIN_SHARE, MAX_STARS } from '../config.js';
+import { DIAG_MIN_SHARE, MAX_STARS, TOAST_MS, TOAST_ACTION_MS, TOAST_MAX } from '../config.js';
 import { defaultOpts, brickCost, hasType } from '../rules/layout.js';
 import { goalsMet, missionStars } from '../rules/goals.js';
 import { campOutcome, nextRound, campRecord } from '../rules/campaign.js';
@@ -13,8 +13,22 @@ import { COLORS } from './board.js';
 import { renderTop, renderGoals, renderTools, refresh } from './panels.js';
 
 // ---------- panneaux ----------
-let toastH;
-export function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastH); toastH = setTimeout(() => t.classList.remove('on'), 2400); }
+// Messages empilés : les incidents rapprochés d'un run restent tous lisibles. Un message déjà affiché repart à zéro au lieu d'être doublé.
+export function toast(msg, action) {
+  const box = $('toast');
+  [...box.children].find(el => el.dataset.msg === msg)?.remove();
+  const el = document.createElement('div');
+  el.dataset.msg = msg; el.textContent = msg;
+  if (action) {
+    const b = document.createElement('button');
+    b.textContent = action.label;
+    b.onclick = () => { el.remove(); action.run(); };
+    el.appendChild(b);
+  }
+  box.appendChild(el);
+  while (box.children.length > TOAST_MAX) box.firstChild.remove();
+  setTimeout(() => el.remove(), action ? TOAST_ACTION_MS : TOAST_MS);
+}
 export function openSheet(html, after) { $('sheet').innerHTML = html; $('sheet').classList.add('on'); $('scrim').classList.add('on'); if (after) after($('sheet')); }
 // La modale de résultat ne se ferme que par ses boutons : un appui sur le fond ne doit pas annuler une faillite.
 export function closeFromScrim() { if (!$('modal').classList.contains('on')) closeAll(); }
