@@ -1,4 +1,4 @@
-import { DT, SPEED_FAST } from '../config.js';
+import { DT, SPEED_FAST, SKIP_GUARD_MS } from '../config.js';
 import { ROW_DEF } from '../content/catalog.js';
 import { makeSim } from '../rules/sim/make.js';
 import { stepSim } from '../rules/sim/step.js';
@@ -20,13 +20,16 @@ export function clickBoard(x, y) {
   });
 }
 export function switchMode(m) { if (RUN) return; ST.mode = m; save(); refresh(); }
-export function toggleRun() { if (RUN) { RUN.skip = true; return; } startRun(); }
+export function toggleRun() {
+  if (!RUN) { startRun(); return; }
+  if (performance.now() - RUN.startedAt >= SKIP_GUARD_MS) RUN.skip = true;
+}
 export function toggleSpeed() { if (!RUN) return; RUN.speed = RUN.speed === SPEED_FAST ? 1 : SPEED_FAST; $('speed').textContent = '×' + RUN.speed; }
 
 // ---------- run ----------
 function startRun() {
   const S = makeSim(CUR.level, lay(), sets());
-  setRun({ S, tk: null, speed: SPEED_FAST, acc: 0, logN: 0, spawnAcc: 0, jobAcc: 0 });
+  setRun({ S, tk: null, startedAt: performance.now(), speed: SPEED_FAST, acc: 0, logN: 0, spawnAcc: 0, jobAcc: 0 });
   stepSim(S); RUN.tk = S.ticks[S.ticks.length - 1];
   clearParticles();
   $('run').textContent = 'Passer ⏭'; $('run').classList.remove('go'); $('speed').style.display = ''; $('speed').textContent = '×' + SPEED_FAST;

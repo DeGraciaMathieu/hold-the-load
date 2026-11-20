@@ -16,6 +16,8 @@ import { renderTop, renderGoals, renderTools, refresh } from './panels.js';
 let toastH;
 export function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastH); toastH = setTimeout(() => t.classList.remove('on'), 2400); }
 export function openSheet(html, after) { $('sheet').innerHTML = html; $('sheet').classList.add('on'); $('scrim').classList.add('on'); if (after) after($('sheet')); }
+// La modale de résultat ne se ferme que par ses boutons : un appui sur le fond ne doit pas annuler une faillite.
+export function closeFromScrim() { if (!$('modal').classList.contains('on')) closeAll(); }
 export function closeAll() { $('sheet').classList.remove('on'); $('modal').classList.remove('on'); $('scrim').classList.remove('on'); }
 
 export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); }
@@ -49,7 +51,7 @@ export function editSheet(row, i) {
   const regs = regionsOf(lv);
   const render = () => {
     const o = { ...defaultOpts(b.type), ...(b.opts || {}) };
-    let html = `<h3><span>${CATALOG[b.type].name}</span><span>${brickCost(b)} € ✕</span></h3><p class="desc">${CATALOG[b.type].desc}</p>`;
+    let html = `<h3><span>${CATALOG[b.type].name} · ${brickCost(b)} €</span><span>✕</span></h3><p class="desc">${CATALOG[b.type].desc}</p>`;
     for (const d of OPT_DEFS[b.type] || []) {
       if (d.k === 'legacy') continue;
       if (b.type === 'server' && d.k === 'size' && !lv.sizes) continue;

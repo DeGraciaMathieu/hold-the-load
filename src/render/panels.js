@@ -25,7 +25,11 @@ export function renderTop() {
       const b = document.createElement('button');
       b.className = 'lvl' + (i === ST.level ? ' cur' : '') + (unlocked ? '' : ' locked');
       b.innerHTML = (i + 1) + '<small>' + '★'.repeat(st) + '☆'.repeat(MAX_STARS - st) + '</small>';
-      b.onclick = () => { if (RUN) return; ST.level = i; save(); refresh(); };
+      b.onclick = () => {
+        if (RUN) return;
+        if (!unlocked) { toast(`Obtiens ${'★'.repeat(MAX_STARS)} sur la mission ${i} pour débloquer celle-ci.`); return; }
+        ST.level = i; save(); refresh();
+      };
       box.appendChild(b);
       if (i === ST.level) setTimeout(() => b.scrollIntoView({ inline: 'center', block: 'nearest' }), 0);
     });

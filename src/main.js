@@ -1,7 +1,7 @@
 import { sources } from './state/context.js';
 import { layout } from './render/geometry.js';
 import { draw } from './render/board.js';
-import { closeAll } from './render/dialogs.js';
+import { closeFromScrim } from './render/dialogs.js';
 import { refresh } from './render/panels.js';
 import { bindInput } from './input/handlers.js';
 import { clickBoard, switchMode, toggleRun, toggleSpeed, frame } from './loop/run.js';
@@ -12,7 +12,7 @@ const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + St
 sources.randomSeed = randomSeed;
 sources.today = todayStr;
 
-bindInput({ board: clickBoard, tab: switchMode, run: toggleRun, speed: toggleSpeed, scrim: closeAll, resize: layout });
+bindInput({ board: clickBoard, tab: switchMode, run: toggleRun, speed: toggleSpeed, scrim: closeFromScrim, resize: layout });
 refresh();
 document.fonts && document.fonts.ready.then(() => draw());
 requestAnimationFrame(frame);
