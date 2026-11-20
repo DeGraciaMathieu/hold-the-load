@@ -1,26 +1,62 @@
 import { ROW_DEF, CATALOG, GLOBAL, OPT_DEFS, SET_DEFS } from '../content/catalog.js';
 import { LEVELS } from '../content/levels.js';
 import { REGION_NAMES, REASONS } from '../content/texts.js';
-import { DIAG_MIN_SHARE, MAX_STARS } from '../config.js';
+import { DIAG_MIN_SHARE, MAX_STARS, TOAST_MS, TOAST_ACTION_MS, TOAST_MAX } from '../config.js';
 import { defaultOpts, brickCost, hasType } from '../rules/layout.js';
 import { goalsMet, missionStars } from '../rules/goals.js';
 import { campOutcome, nextRound, campRecord } from '../rules/campaign.js';
 import { isDailyRecord } from '../rules/daily.js';
 import { ST, save } from '../state/store.js';
-import { CUR, sources, campLevel, newCamp, lay, sets, regionsOf, lbAlgosOf } from '../state/context.js';
+import { CUR, RUN, sources, campLevel, newCamp, lay, sets, regionsOf, lbAlgosOf } from '../state/context.js';
 import { $, fmt } from './dom.js';
-import { COLORS } from './board.js';
+import { COLORS, invalidate } from './board.js';
 import { renderTop, renderGoals, renderTools, refresh } from './panels.js';
 
 // ---------- panneaux ----------
-let toastH;
-export function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastH); toastH = setTimeout(() => t.classList.remove('on'), 2400); }
-export function openSheet(html, after) { $('sheet').innerHTML = html; $('sheet').classList.add('on'); $('scrim').classList.add('on'); if (after) after($('sheet')); }
-// La modale de résultat ne se ferme que par ses boutons : un appui sur le fond ne doit pas annuler une faillite.
-export function closeFromScrim() { if (!$('modal').classList.contains('on')) closeAll(); }
-export function closeAll() { $('sheet').classList.remove('on'); $('modal').classList.remove('on'); $('scrim').classList.remove('on'); }
+// Messages empilés : les incidents rapprochés d'un run restent tous lisibles. Un message déjà affiché repart à zéro au lieu d'être doublé.
+export function toast(msg, action) {
+  const box = $('toast');
+  [...box.children].find(el => el.dataset.msg === msg)?.remove();
+  const el = document.createElement('div');
+  el.dataset.msg = msg; el.textContent = msg;
+  if (action) {
+    const b = document.createElement('button');
+    b.textContent = action.label;
+    b.onclick = () => { el.remove(); action.run(); };
+    el.appendChild(b);
+  }
+  box.appendChild(el);
+  while (box.children.length > TOAST_MAX) box.firstChild.remove();
+  setTimeout(() => el.remove(), action ? TOAST_ACTION_MS : TOAST_MS);
+}
+// Commandes de construction indisponibles pendant un run : on le dit au lieu d'ignorer l'appui.
+export function blockedByRun() { if (RUN) toast('Simulation en cours : attends la fin ou passe-la.'); return !!RUN; }
 
-export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); }
+// Feuille et modale fermées sont inertes : hors de l'ordre de tabulation et inactivables.
+let returnFocus = null;
+function openLayer(el, focusIdx) {
+  if (!returnFocus) returnFocus = document.activeElement;
+  el.inert = false; el.classList.add('on'); $('scrim').classList.add('on');
+  const btns = el.querySelectorAll('button');
+  (btns[focusIdx] || btns[0])?.focus({ preventScroll: true });
+}
+export function openSheet(html, after) {
+  const sheet = $('sheet');
+  // une feuille redessinée après un réglage garde le focus sur le même bouton
+  const focusIdx = [...sheet.querySelectorAll('button')].indexOf(document.activeElement);
+  sheet.innerHTML = html;
+  if (after) after(sheet);
+  openLayer(sheet, focusIdx);
+}
+// Fond et Échap : la modale de résultat ne se ferme que par ses boutons, pour qu'une faillite ne puisse pas être annulée.
+export function dismiss() { if (!$('modal').classList.contains('on')) closeAll(); }
+export function closeAll() {
+  for (const el of [$('sheet'), $('modal')]) { el.classList.remove('on'); el.inert = true; }
+  $('scrim').classList.remove('on');
+  returnFocus?.focus({ preventScroll: true }); returnFocus = null;
+}
+
+export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); invalidate(); }
 
 export function addSheet(row, i) {
   const lv = CUR.level, L = lay(), r = ROW_DEF.find(x => x.key === row);
@@ -101,7 +137,7 @@ function diagHtml(res) {
   return h;
 }
 function row(k, v, t, ok) { return `<div class="row"><span>${k}</span><span>${v} ${ok == null ? '' : `<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✕'}</span>`} <span style="color:#7a7266">${t}</span></span></div>`; }
-function showModal(html, bind) { $('modal').innerHTML = html; $('modal').classList.add('on'); $('scrim').classList.add('on'); bind && bind($('modal')); }
+function showModal(html, bind) { $('modal').innerHTML = html; bind && bind($('modal')); openLayer($('modal')); }
 
 export function showResult(res) {
   const lv = CUR.level, g = lv.goals, met = goalsMet(lv, res);

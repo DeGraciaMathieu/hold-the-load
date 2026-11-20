@@ -144,6 +144,18 @@ function pill(x, y, label, dot, alarm) {
   if (dot) { ctx.beginPath(); ctx.arc(x - lw / 2 + 11, y, 3.5, 0, 7); ctx.fillStyle = dot; ctx.fill(); }
 }
 
+// Libellé Internet le plus complet qui tient entre le chrono (à gauche) et la pastille API (à droite).
+function internetLabel(T, bots, timer) {
+  ctx.font = FONT(700, 10);
+  const left = timer ? 4 + ctx.measureText(timer).width + 6 : 4;
+  ctx.font = FONT(800, 10);
+  const right = hasPay() ? G.api.x - (ctx.measureText('API €').width + 24) / 2 - 6 : W - 4;
+  const room = 2 * Math.min(G.internet.x - left, right - G.internet.x);
+  const traffic = fmt(T) + ' r/s' + (bots ? ' + ' + fmt(bots) + ' bots' : '');
+  const full = 'INTERNET · ' + traffic;
+  return ctx.measureText(full).width + 24 <= room ? full : traffic;
+}
+
 function drawLink(a, b, alpha) { ctx.save(); ctx.strokeStyle = `rgba(29,27,24,${alpha})`; ctx.lineWidth = 1.3; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.restore(); }
 
 function fitText(txt, x, y, maxW, w, size) {
@@ -179,13 +191,22 @@ function drawBrick(b, s, st, label, extra) {
   }
 }
 
+// Hors run et sans particule, le plateau ne bouge pas : on ne le redessine qu'après un changement signalé.
+let dirty = true;
+export const invalidate = () => { dirty = true; };
+export function drawIfNeeded() {
+  if (!dirty && !RUN && !particles.length && !bursts.length) return;
+  dirty = false; draw();
+}
+
 export function draw() {
   ctx.clearRect(0, 0, W, H);
   const L = lay(), lv = CUR.level;
   for (const [a, b, al] of links()) drawLink(a, b, al);
   const tk = RUN && RUN.tk;
   const T = tk ? tk.T : lv.rps * lv.profile(0);
-  pill(G.internet.x, G.internet.y, 'INTERNET · ' + fmt(T) + ' r/s' + (tk && tk.bots ? ' + ' + fmt(tk.bots) + ' bots' : ''), RUN ? (tk && tk.bots ? '#d64534' : '#2f9e5b') : '#7a7266', tk && tk.bots > 0);
+  const timer = RUN && tk ? Math.floor(tk.t) + '/' + lv.duration + ' s' : '';
+  pill(G.internet.x, G.internet.y, internetLabel(T, tk && tk.bots, timer), RUN ? (tk && tk.bots ? '#d64534' : '#2f9e5b') : '#7a7266', tk && tk.bots > 0);
   if (hasPay()) { const bad = tk && tk.api && (tk.api.lat > API_BAD_LAT || tk.api.err > API_BAD_ERR); pill(G.api.x, G.api.y, 'API €', bad ? '#d64534' : tk ? '#2f9e5b' : '#7a7266', bad); }
   const letters = 'ABCDE';
   let srvIdx = 0;
@@ -222,5 +243,5 @@ export function draw() {
     ctx.beginPath(); ctx.moveTo(b.x - 4, b.y - 4); ctx.lineTo(b.x + 4, b.y + 4); ctx.moveTo(b.x + 4, b.y - 4); ctx.lineTo(b.x - 4, b.y + 4); ctx.stroke();
     ctx.beginPath(); ctx.arc(b.x, b.y, 4 + b.age * 20, 0, 7); ctx.stroke(); ctx.restore();
   }
-  if (RUN && tk) { ctx.font = FONT(700, 10); ctx.textAlign = 'left'; ctx.fillStyle = '#1d1b18'; ctx.textBaseline = 'middle'; ctx.fillText(Math.floor(tk.t) + '/' + lv.duration + ' s', 4, G.internet.y); }
+  if (timer) { ctx.font = FONT(700, 10); ctx.textAlign = 'left'; ctx.fillStyle = '#1d1b18'; ctx.textBaseline = 'middle'; ctx.fillText(timer, 4, G.internet.y); }
 }

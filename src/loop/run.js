@@ -6,25 +6,27 @@ import { resultOf } from '../rules/sim/result.js';
 import { ST, save } from '../state/store.js';
 import { CUR, RUN, setRun, lay, sets } from '../state/context.js';
 import { $ } from '../render/dom.js';
-import { G } from '../render/geometry.js';
-import { draw } from '../render/board.js';
+import { G, layout } from '../render/geometry.js';
+import { drawIfNeeded, invalidate } from '../render/board.js';
 import { particles, clearParticles, spawn, spawnJob, stepParticles } from '../render/particles.js';
 import { renderGoals, refresh, renderCards, liveGoals } from '../render/panels.js';
-import { toast, addSheet, editSheet, showResult } from '../render/dialogs.js';
+import { toast, addSheet, editSheet, showResult, blockedByRun } from '../render/dialogs.js';
 
 // ---------- intentions du joueur ----------
 export function clickBoard(x, y) {
-  if (RUN) return;
+  if (blockedByRun()) return;
   for (const r of ROW_DEF) G.rows[r.key].slots.forEach((s, i) => {
     if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) (lay()[r.key][i] ? editSheet : addSheet)(r.key, i);
   });
 }
-export function switchMode(m) { if (RUN) return; ST.mode = m; save(); refresh(); }
+export function switchMode(m) { if (blockedByRun()) return; ST.mode = m; save(); refresh(); }
 export function toggleRun() {
   if (!RUN) { startRun(); return; }
   if (performance.now() - RUN.startedAt >= SKIP_GUARD_MS) RUN.skip = true;
 }
 export function toggleSpeed() { if (!RUN) return; RUN.speed = RUN.speed === SPEED_FAST ? 1 : SPEED_FAST; $('speed').textContent = '×' + RUN.speed; }
+
+export function relayout() { if (layout()) { clearParticles(); invalidate(); } }
 
 // ---------- run ----------
 function startRun() {
@@ -32,6 +34,7 @@ function startRun() {
   setRun({ S, tk: null, startedAt: performance.now(), speed: SPEED_FAST, acc: 0, logN: 0, spawnAcc: 0, jobAcc: 0 });
   stepSim(S); RUN.tk = S.ticks[S.ticks.length - 1];
   clearParticles();
+  document.body.classList.add('running');
   $('run').textContent = 'Passer ⏭'; $('run').classList.remove('go'); $('speed').style.display = ''; $('speed').textContent = '×' + SPEED_FAST;
   $('hint').textContent = 'Points noirs : requêtes. ✕ rouge : perdue. Violet : bots.';
   renderCards();
@@ -40,7 +43,8 @@ function endRun() {
   const S = RUN.S;
   while (!S.done) stepSim(S);
   const res = resultOf(S);
-  setRun(null); clearParticles();
+  setRun(null); clearParticles(); invalidate();
+  document.body.classList.remove('running');
   $('cards').classList.remove('on'); $('speed').style.display = 'none';
   $('run').textContent = 'Lancer ▶'; $('run').classList.add('go');
   $('hint').textContent = 'Touche une case pour poser une brique, une brique pour la régler.';
@@ -70,6 +74,6 @@ export function frame(now) {
     }
   }
   stepParticles(dt);
-  draw();
+  drawIfNeeded();
   requestAnimationFrame(frame);
 }
