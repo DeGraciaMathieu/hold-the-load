@@ -100,7 +100,7 @@ export function editSheet(row, i) {
       html += `<div class="grp"><div class="lab">${d.label}</div><div class="seg">${choices.map(c => `<button data-k="${d.k}" data-v='${JSON.stringify(c[0])}' class="${o[d.k] === c[0] ? 'on' : ''}">${c[1]}</button>`).join('')}</div><div class="help">${d.help ? d.help[String(o[d.k])] || '' : ''}</div></div>`;
     }
     if (regs && !GLOBAL.includes(b.type)) html += `<div class="grp"><div class="lab">Région</div><div class="seg">${regs.map(g => `<button data-reg="${g}" class="${(b.region || regs[0]) === g ? 'on' : ''}">${REGION_NAMES[g]}</button>`).join('')}</div></div>`;
-    if (!b.locked) html += `<button class="opt rm" id="rmB"><span class="sw" style="background:#fff">✕</span><span><b>Retirer</b><p>Libère la case.</p></span><span class="price">−${brickCost(b)} €</span></button>`;
+    if (!b.locked) html += `<button class="opt rm" id="rmB"><span class="sw" style="background:var(--surface)">✕</span><span><b>Retirer</b><p>Libère la case.</p></span><span class="price">−${brickCost(b)} €</span></button>`;
     else html += `<p class="desc">🔒 Cette brique fait partie de l’héritage : impossible de la retirer.</p>`;
     openSheet(html, el => {
       el.querySelector('h3 .x').onclick = closeAll;
@@ -134,11 +134,11 @@ export function settingsSheet() {
 function diagHtml(res) {
   const reasons = Object.entries(res.reasons).sort((a, b) => b[1] - a[1]).filter(([, n]) => n / res.total > DIAG_MIN_SHARE).slice(0, 3);
   let h = '';
-  if (reasons.length) h += '<div class="diag"><b>Ce qui a lâché</b>' + reasons.map(([k, n]) => `<div>✕ ${REASONS[k]} <span style="color:#7a7266">(${(n / res.total * 100).toFixed(1)} %)</span></div>`).join('') + '</div>';
+  if (reasons.length) h += '<div class="diag"><b>Ce qui a lâché</b>' + reasons.map(([k, n]) => `<div>✕ ${REASONS[k]} <span style="color:var(--muted)">(${(n / res.total * 100).toFixed(1)} %)</span></div>`).join('') + '</div>';
   if (res.log.length) h += '<div class="diag"><b>Chronologie</b>' + res.log.slice(0, 8).map(l => `<div>${l.t.toFixed(0)} s · ${l.msg}</div>`).join('') + '</div>';
   return h;
 }
-function row(k, v, t, ok) { return `<div class="row"><span>${k}</span><span>${v} ${ok == null ? '' : `<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✕'}</span>`} <span style="color:#7a7266">${t}</span></span></div>`; }
+function row(k, v, t, ok) { return `<div class="row"><span>${k}</span><span>${v} ${ok == null ? '' : `<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✕'}</span>`} <span style="color:var(--muted)">${t}</span></span></div>`; }
 function showModal(html, bind) { $('modal').innerHTML = html; bind && bind($('modal')); openLayer($('modal')); }
 
 export function showResult(res) {
@@ -160,7 +160,7 @@ export function showResult(res) {
   } else if (CUR.kind === 'daily') {
     const d = (ST.daily[CUR.key] ||= {});
     let best = '';
-    if (isDailyRecord(met, res, d.best)) { d.best = res.cost; best = '<p class="desc" style="font-size:12px;margin:8px 0">🏆 Nouveau record !</p>'; }
+    if (isDailyRecord(met, res, d.best)) { d.best = res.cost; best = '<p class="desc" style="font-size:var(--t-2);margin:var(--s-2) 0">🏆 Nouveau record !</p>'; }
     save(); renderTop();
     const share = `Tenir la charge · ${lv.title} · ${met.win ? res.cost + ' €/mois ✓' : 'pas tenu'} (dispo ${res.avail.toFixed(2)} %, p95 ${Math.round(res.p95)} ms)`;
     showModal(`<h2>${met.win ? 'Défi tenu' : 'Ça n’a pas tenu'}</h2>${best}${rows}${diagHtml(res)}<div class="actions"><button class="btn light" id="mClose">Retenter</button><button class="btn" id="mCopy">Copier le score</button></div>`, el => {
@@ -173,7 +173,7 @@ export function showResult(res) {
     const lost = brokeBy != null;
     const why = brokeBy === 'avail' ? 'Trop de pannes : les clients sont partis.' : brokeBy === 'cash' ? 'Trésorerie à sec.' : '';
     const html = `<h2>${lost ? 'Faillite' : 'Tour ' + c.round + ' passé'}</h2>${rows}
-      <div class="diag"><b>Bilan du tour</b><div>Revenu : +${fmt(rev)} €${res.avail < 99 ? ' (amputé par les pannes)' : ''}${res.p95 > lv.goals.p95 ? ' (−30 % pour la lenteur)' : ''}</div><div>Infra : −${fmt(res.cost)} €</div><div><b style="display:inline;color:inherit;font-size:11px;letter-spacing:0;text-transform:none">Net : ${net >= 0 ? '+' : ''}${fmt(net)} € → trésorerie ${fmt(cash)} €</b></div>${lost ? `<div>✕ ${why}</div>` : ''}</div>${diagHtml(res)}
+      <div class="diag"><b>Bilan du tour</b><div>Revenu : +${fmt(rev)} €${res.avail < 99 ? ' (amputé par les pannes)' : ''}${res.p95 > lv.goals.p95 ? ' (−30 % pour la lenteur)' : ''}</div><div>Infra : −${fmt(res.cost)} €</div><div><b style="display:inline;color:inherit;font-size:var(--t-1);letter-spacing:0;text-transform:none">Net : ${net >= 0 ? '+' : ''}${fmt(net)} € → trésorerie ${fmt(cash)} €</b></div>${lost ? `<div>✕ ${why}</div>` : ''}</div>${diagHtml(res)}
       <div class="actions">${lost ? '<button class="btn go" id="mNew">Nouvelle partie</button>' : '<button class="btn light" id="mRetry">Rejouer le tour</button><button class="btn go" id="mNext">Tour suivant →</button>'}</div>`;
     showModal(html, el => {
       if (lost) {

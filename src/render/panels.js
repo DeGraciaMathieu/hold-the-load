@@ -47,17 +47,17 @@ function goalTiles(res) {
   const lv = CUR.level, g = lv.goals, cost = layoutCost(lay());
   const met = res ? goalsMet(lv, res) : null;
   const tiles = [];
-  tiles.push({ k: 'Disponibilité', v: res ? res.avail.toFixed(1) + ' %' : '?', t: '≥ ' + g.avail + ' %', s: met ? met.avail : null, id: 'avail' });
-  tiles.push({ k: 'Latence p95', v: res ? (res.ok ? Math.round(res.p95) + ' ms' : '–') : '?', t: '≤ ' + g.p95 + ' ms', s: met ? met.p95 : null, id: 'p95' });
+  tiles.push({ k: 'Disponibilité', ks: 'Dispo.', v: res ? res.avail.toFixed(1) + ' %' : '?', t: '≥ ' + g.avail + ' %', s: met ? met.avail : null, id: 'avail' });
+  tiles.push({ k: 'Latence p95', ks: 'Latence', v: res ? (res.ok ? Math.round(res.p95) + ' ms' : '–') : '?', t: '≤ ' + g.p95 + ' ms', s: met ? met.p95 : null, id: 'p95' });
   const usage = !res && hasType(lay(), 'autoscale') ? '+' : '';
   if (g.budget != null) { const c = res ? res.cost : cost; tiles.push({ k: 'Budget', v: c + ' €' + usage, t: '≤ ' + g.budget + ' €', s: c > g.budget ? false : res ? true : null, id: 'budget' }); }
   else tiles.push({ k: 'Coût', v: (res ? res.cost : cost) + ' €', t: CUR.kind === 'daily' ? 'à minimiser' : 'payé chaque tour', s: null, id: 'budget' });
   if (g.fresh != null) tiles.push({ k: 'Fraîcheur', v: res ? res.fresh.toFixed(1) + ' %' : '?', t: '≥ ' + g.fresh + ' %', s: met ? met.fresh : null, id: 'fresh' });
-  if (g.recos != null) tiles.push({ k: 'Recos servies', v: res ? Math.round(res.recos) + ' %' : '?', t: '≥ ' + g.recos + ' %', s: met ? met.recos : null, id: 'recos' });
+  if (g.recos != null) tiles.push({ k: 'Recos servies', ks: 'Recos', v: res ? Math.round(res.recos) + ' %' : '?', t: '≥ ' + g.recos + ' %', s: met ? met.recos : null, id: 'recos' });
   return tiles;
 }
 export function renderGoals(res) {
-  $('goals').innerHTML = goalTiles(res).map(x => `<div class="goal ${x.s === true ? 'ok' : x.s === false ? 'ko' : ''}" id="g-${x.id}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="t">${x.t}</div></div>`).join('');
+  $('goals').innerHTML = goalTiles(res).map(x => `<div class="goal ${x.s === true ? 'ok' : x.s === false ? 'ko' : ''}" id="g-${x.id}"><div class="k" title="${x.k}"><span class="kl">${x.k}</span><span class="ks">${x.ks || x.k}</span></div><div class="v">${x.v}</div><div class="t">${x.t}</div></div>`).join('');
   const cost = layoutCost(lay()), g = CUR.level.goals;
   $('costK').textContent = CUR.kind === 'camp' ? 'Coût par tour' : 'Coût mensuel';
   const auto = hasType(lay(), 'autoscale') ? ' + usage' : '';
@@ -79,7 +79,7 @@ export function renderTools() {
   if (CUR.kind !== 'camp') html += `<button class="chip" id="resetBtn">↺ Repartir de zéro</button>`;
   $('tools').innerHTML = html;
   if ($('setBtn')) $('setBtn').onclick = () => !blockedByRun() && settingsSheet();
-  if ($('cardsInfo')) $('cardsInfo').onclick = () => openSheet(`<h3><span>Cartes d’action</span><button class="x" aria-label="Fermer">✕</button></h3><p class="desc">Elles apparaissent pendant le run, à jouer au bon moment.</p>` + cards.map(([k, n]) => `<div class="opt"><span class="sw" style="background:#fff7e6">${n}</span><span><b>${CARDS[k].name}</b><p>${CARDS[k].desc}</p></span></div>`).join(''), el => (el.querySelector('h3 .x').onclick = closeAll));
+  if ($('cardsInfo')) $('cardsInfo').onclick = () => openSheet(`<h3><span>Cartes d’action</span><button class="x" aria-label="Fermer">✕</button></h3><p class="desc">Elles apparaissent pendant le run, à jouer au bon moment.</p>` + cards.map(([k, n]) => `<div class="opt"><span class="sw" style="background:var(--note)">${n}</span><span><b>${CARDS[k].name}</b><p>${CARDS[k].desc}</p></span></div>`).join(''), el => (el.querySelector('h3 .x').onclick = closeAll));
   if ($('resetBtn')) $('resetBtn').onclick = () => {
     if (blockedByRun()) return;
     const key = CUR.key, before = cloneLayout(lay());
