@@ -79,7 +79,15 @@ export function renderTools() {
   $('tools').innerHTML = html;
   if ($('setBtn')) $('setBtn').onclick = () => !RUN && settingsSheet();
   if ($('cardsInfo')) $('cardsInfo').onclick = () => openSheet(`<h3><span>Cartes d’action</span><span>✕</span></h3><p class="desc">Elles apparaissent pendant le run, à jouer au bon moment.</p>` + cards.map(([k, n]) => `<div class="opt"><span class="sw" style="background:#fff7e6">${n}</span><span><b>${CARDS[k].name}</b><p>${CARDS[k].desc}</p></span></div>`).join(''), el => (el.querySelector('h3 span:last-child').onclick = closeAll));
-  if ($('resetBtn')) $('resetBtn').onclick = () => { if (RUN) return; ST.layouts[CUR.key] = lv.preset ? cloneLayout(lv.preset) : emptyLayout(); changed(); };
+  if ($('resetBtn')) $('resetBtn').onclick = () => {
+    if (RUN) return;
+    const key = CUR.key, before = cloneLayout(lay());
+    ST.layouts[key] = lv.preset ? cloneLayout(lv.preset) : emptyLayout(); changed();
+    toast('Infra réinitialisée.', { label: 'Annuler', run: () => {
+      if (RUN || CUR.key !== key) return;
+      ST.layouts[key] = before; changed();
+    } });
+  };
 }
 export function refresh() {
   buildCtx(); renderTop();
