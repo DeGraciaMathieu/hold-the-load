@@ -194,6 +194,11 @@ function drawBrick(b, s, st, label, extra) {
 // Hors run et sans particule, le plateau ne bouge pas : on ne le redessine qu'après un changement signalé.
 let dirty = true;
 export const invalidate = () => { dirty = true; };
+let hover = null; // case survolée à la souris, hors run
+export function setHover(slot) {
+  if (hover?.row === slot?.row && hover?.i === slot?.i) return;
+  hover = slot; invalidate();
+}
 export function drawIfNeeded() {
   if (!dirty && !RUN && !particles.length && !bursts.length) return;
   dirty = false; draw();
@@ -237,6 +242,7 @@ export function draw() {
       drawBrick(b, s, st, label, { sub: (optSummary(b) ? optSummary(b) + ' · ' : '') + brickCost(b) + '€', region: regs && !GLOBAL.includes(b.type) ? (b.region || regs[0]) : null });
     });
   }
+  if (hover && !RUN) { const s = G.rows[hover.row].slots[hover.i]; ctx.save(); ctx.strokeStyle = '#f4a259'; ctx.lineWidth = 3; rr(s.x - 3, s.y - 3, s.w + 6, s.h + 6, 13); ctx.stroke(); ctx.restore(); }
   for (const p of particles) { ctx.beginPath(); ctx.arc(p.x, p.y, p.bot ? 2.4 : 2.8, 0, 7); ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha; ctx.fill(); ctx.globalAlpha = 1; }
   for (const b of bursts) {
     ctx.save(); ctx.globalAlpha = 1 - b.age / .5; ctx.strokeStyle = b.color || '#d64534'; ctx.lineWidth = 2;

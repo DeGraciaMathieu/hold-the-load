@@ -100,6 +100,10 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 12px calc(1
   /* collée en bas de la colonne quand celle-ci défile (paysage) : Lancer reste accessible */
   footer { position: sticky; bottom: 0; padding: 8px 0 0; margin-top: 2px; background: var(--paper); }
 }
+.keys { display: none; }
+@media (hover: hover) and (min-width: 900px) {
+  .keys { display: block; margin-top: 6px; }
+}
 @media (orientation: landscape) and (max-height: 520px) {
   .wrap { grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; }
 }

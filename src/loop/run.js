@@ -7,23 +7,36 @@ import { ST, save } from '../state/store.js';
 import { CUR, RUN, setRun, lay, sets } from '../state/context.js';
 import { $ } from '../render/dom.js';
 import { G, layout } from '../render/geometry.js';
-import { drawIfNeeded, invalidate } from '../render/board.js';
+import { drawIfNeeded, invalidate, setHover } from '../render/board.js';
 import { particles, clearParticles, spawn, spawnJob, stepParticles } from '../render/particles.js';
 import { renderGoals, refresh, renderCards, liveGoals } from '../render/panels.js';
-import { toast, addSheet, editSheet, showResult, blockedByRun } from '../render/dialogs.js';
+import { toast, addSheet, editSheet, showResult, blockedByRun, layerOpen } from '../render/dialogs.js';
 
 // ---------- intentions du joueur ----------
+function slotAt(x, y) {
+  for (const r of ROW_DEF) {
+    const i = G.rows[r.key].slots.findIndex(s => x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h);
+    if (i >= 0) return { row: r.key, i };
+  }
+  return null;
+}
 export function clickBoard(x, y) {
   if (blockedByRun()) return;
-  for (const r of ROW_DEF) G.rows[r.key].slots.forEach((s, i) => {
-    if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) (lay()[r.key][i] ? editSheet : addSheet)(r.key, i);
-  });
+  const slot = slotAt(x, y);
+  if (slot) (lay()[slot.row][slot.i] ? editSheet : addSheet)(slot.row, slot.i);
+}
+export function hoverBoard(x, y) {
+  const slot = RUN || x == null ? null : slotAt(x, y);
+  $('board').style.cursor = slot ? 'pointer' : '';
+  setHover(slot);
 }
 export function switchMode(m) { if (blockedByRun()) return; ST.mode = m; save(); refresh(); }
 export function toggleRun() {
   if (!RUN) { startRun(); return; }
   if (performance.now() - RUN.startedAt >= SKIP_GUARD_MS) RUN.skip = true;
 }
+export function launchKey() { if (!RUN && !layerOpen()) startRun(); }
+export function skipKey() { if (RUN) toggleRun(); }
 export function toggleSpeed() { if (!RUN) return; RUN.speed = RUN.speed === SPEED_FAST ? 1 : SPEED_FAST; $('speed').textContent = '×' + RUN.speed; }
 
 export function relayout() { if (layout()) { clearParticles(); invalidate(); } }
