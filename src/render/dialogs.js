@@ -32,6 +32,8 @@ export function toast(msg, action) {
 // Commandes de construction indisponibles pendant un run : on le dit au lieu d'ignorer l'appui.
 export function blockedByRun() { if (RUN) toast('Simulation en cours : attends la fin ou passe-la.'); return !!RUN; }
 
+export const layerOpen = () => $('scrim').classList.contains('on');
+
 // Feuille et modale fermées sont inertes : hors de l'ordre de tabulation et inactivables.
 let returnFocus = null;
 function openLayer(el, focusIdx) {
