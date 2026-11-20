@@ -10,7 +10,7 @@ import { CUR, RUN, buildCtx, lay, sets } from '../state/context.js';
 import { $, fmt } from './dom.js';
 import { layout } from './geometry.js';
 import { clearParticles } from './particles.js';
-import { toast, openSheet, closeAll, changed, settingsSheet } from './dialogs.js';
+import { toast, openSheet, closeAll, changed, settingsSheet, blockedByRun } from './dialogs.js';
 
 // ---------- rendu de l'écran ----------
 export function renderTop() {
@@ -26,7 +26,7 @@ export function renderTop() {
       b.className = 'lvl' + (i === ST.level ? ' cur' : '') + (unlocked ? '' : ' locked');
       b.innerHTML = (i + 1) + '<small>' + '★'.repeat(st) + '☆'.repeat(MAX_STARS - st) + '</small>';
       b.onclick = () => {
-        if (RUN) return;
+        if (blockedByRun()) return;
         if (!unlocked) { toast(`Obtiens ${'★'.repeat(MAX_STARS)} sur la mission ${i} pour débloquer celle-ci.`); return; }
         ST.level = i; save(); refresh();
       };
@@ -77,10 +77,10 @@ export function renderTools() {
   if (cards.length) html += `<button class="chip" id="cardsInfo">🃏 ${cards.map(([k, n]) => CARDS[k].name + (n > 1 ? ' ×' + n : '')).join(', ')}</button>`;
   if (CUR.kind !== 'camp') html += `<button class="chip" id="resetBtn">↺ Repartir de zéro</button>`;
   $('tools').innerHTML = html;
-  if ($('setBtn')) $('setBtn').onclick = () => !RUN && settingsSheet();
+  if ($('setBtn')) $('setBtn').onclick = () => !blockedByRun() && settingsSheet();
   if ($('cardsInfo')) $('cardsInfo').onclick = () => openSheet(`<h3><span>Cartes d’action</span><span>✕</span></h3><p class="desc">Elles apparaissent pendant le run, à jouer au bon moment.</p>` + cards.map(([k, n]) => `<div class="opt"><span class="sw" style="background:#fff7e6">${n}</span><span><b>${CARDS[k].name}</b><p>${CARDS[k].desc}</p></span></div>`).join(''), el => (el.querySelector('h3 span:last-child').onclick = closeAll));
   if ($('resetBtn')) $('resetBtn').onclick = () => {
-    if (RUN) return;
+    if (blockedByRun()) return;
     const key = CUR.key, before = cloneLayout(lay());
     ST.layouts[key] = lv.preset ? cloneLayout(lv.preset) : emptyLayout(); changed();
     toast('Infra réinitialisée.', { label: 'Annuler', run: () => {

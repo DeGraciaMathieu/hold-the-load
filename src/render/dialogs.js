@@ -7,7 +7,7 @@ import { goalsMet, missionStars } from '../rules/goals.js';
 import { campOutcome, nextRound, campRecord } from '../rules/campaign.js';
 import { isDailyRecord } from '../rules/daily.js';
 import { ST, save } from '../state/store.js';
-import { CUR, sources, campLevel, newCamp, lay, sets, regionsOf, lbAlgosOf } from '../state/context.js';
+import { CUR, RUN, sources, campLevel, newCamp, lay, sets, regionsOf, lbAlgosOf } from '../state/context.js';
 import { $, fmt } from './dom.js';
 import { COLORS } from './board.js';
 import { renderTop, renderGoals, renderTools, refresh } from './panels.js';
@@ -29,6 +29,9 @@ export function toast(msg, action) {
   while (box.children.length > TOAST_MAX) box.firstChild.remove();
   setTimeout(() => el.remove(), action ? TOAST_ACTION_MS : TOAST_MS);
 }
+// Commandes de construction indisponibles pendant un run : on le dit au lieu d'ignorer l'appui.
+export function blockedByRun() { if (RUN) toast('Simulation en cours : attends la fin ou passe-la.'); return !!RUN; }
+
 // Feuille et modale fermées sont inertes : hors de l'ordre de tabulation et inactivables.
 let returnFocus = null;
 function openLayer(el, focusIdx) {
