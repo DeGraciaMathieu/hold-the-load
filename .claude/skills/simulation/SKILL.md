@@ -44,7 +44,7 @@ Modèle de flux à pas fixe : à chaque pas de `DT` = 0,25 s, un débit de requ�
 11. autoscaling
 12. état visuel (`tk.vis`…) et avancement du temps
 
-`stepSim` fait environ 350 lignes interdépendantes. **Décision (`docs/decisions.md`) : le découper au premier ajout de brique ou d'incident**, avant d'écrire la nouveauté. On extrait une fonction par bloc `// ----` (par exemple `stepServers(S, ctx)`), qui continue de modifier `S`, une étape à la fois, avec `npm test` au vert après chaque extraction. Pas de version qui rend un nouvel état. Le code mort listé dans `docs/decisions.md` (`D.direct`, `botsByPool`, `tk.nodes`…) ne se nettoie pas au passage.
+`stepSim` appelle une fonction par étape, dans l'ordre ci-dessus (`fireEvents`, `autoFailover`, `instantParams`, `userVolumes`, `stepServers`, `stepConnections`, `routeRequests`, `stepDatabase`, `stepWorkers`, `settleRetries`, `stepAutoscaling`, `recordTick`). Chacune modifie `S` et se passe les résultats du pas dans l'objet `X` : une étape lit dans `X` ce que les précédentes y ont rangé, et y ajoute ses propres résultats avec `Object.assign(X, { … })`. Une nouvelle règle va dans l'étape concernée, ou dans une nouvelle étape appelée au bon endroit de `stepSim`. Le code mort listé dans `docs/decisions.md` (`D.direct`, `botsByPool`, `tk.nodes`…) ne se nettoie pas au passage.
 
 ## Où mettre du nouveau code
 
@@ -58,8 +58,8 @@ Modèle de flux à pas fixe : à chaque pas de `DT` = 0,25 s, un débit de requ�
 ## Ajouter un incident
 
 1. Choisir sa forme : ponctuel (`{ type, t, … }`) ou à fenêtre (`{ type, from, to, … }`).
-2. Ponctuel : ajouter une branche `else if (e.type === '…')` dans le bloc « événements ponctuels » de `stepSim`. Pousser un message dans `S.log`, il s'affiche en toast.
-3. À fenêtre : le lire avec `evActive(L, '…', t)` dans « paramètres de l'instant ».
+2. Ponctuel : ajouter une branche `else if (e.type === '…')` dans `fireEvents` (`step.js`). Pousser un message dans `S.log`, il s'affiche en toast.
+3. À fenêtre : le lire avec `evActive(L, '…', t)` dans `instantParams`.
 4. Mettre ses durées et ses intensités dans `src/config.js` (préfixe `GEN_` s'il est généré).
 5. Ajouter son libellé dans `EVENT_NAMES` (`texts.js`) s'il peut être tiré par `genLevel`, et l'ajouter à `evPool` dans `rules/procgen.js` avec sa condition.
 6. L'utiliser dans une mission (`levels.js`), voir le skill `contenu`.

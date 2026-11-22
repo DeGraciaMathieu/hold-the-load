@@ -117,7 +117,7 @@ actuel champ par champ. À ne régénérer que pour un changement de règle voul
 ### Exceptions au contrat de pureté
 
 - `stepSim`, `useCard` et `promote` (`rules/sim/`) **modifient l'état `S`** reçu en
-  argument. `stepSim` fait 350 lignes interdépendantes ; le réécrire en fonction pure aurait
+  argument. `stepSim` enchaîne douze étapes interdépendantes ; le réécrire en fonction pure aurait
   changé le code au-delà d'un déplacement. Validé avec l'utilisateur.
 - `addReason` (`rules/stats.js`) ajoute dans l'accumulateur qu'on lui passe.
 
@@ -171,10 +171,11 @@ Tranchées le 2026-11-22, à la mise en place de l'outillage Claude Code.
   seuls les cas attendus bougent, on régénère dans le même commit et on le dit dans le
   message. `golden.test.js` listera tous les cas qui diffèrent au lieu de s'arrêter au
   premier. Le mode prototype reste pour l'historique. **Pas encore implémenté.**
-- **Découpage de `stepSim`** : reporté au premier ajout de brique ou d'incident. Il se fera
-  étape par étape (une fonction par bloc `// ----`, par exemple `stepServers(S, ctx)`), en
-  continuant de modifier `S`, avec `npm test` au vert après chaque extraction. On renonce à
-  une version qui rend un nouvel état.
+- **Découpage de `stepSim`** : fait avant l'ajout du cloisonnement (`docs/prd-cloisonnement.md`).
+  Une fonction par bloc `// ----` (`fireEvents`, `stepServers`, `stepDatabase`…), qui modifie
+  toujours `S`. Les étapes d'un même pas se passent leurs résultats dans un objet `X` créé
+  par `stepSim`. Aucun calcul n'a changé : l'instantané de référence passe à l'identique.
+  On renonce à une version qui rend un nouvel état.
 - **Particules** : assumées comme une illustration approximative. Seul l'écart qui contredit
   le bilan sous les yeux du joueur (upload affiché réussi alors que le stockage objet est
   tombé) est à corriger, à la prochaine retouche des particules. Elles lisent le `tick`,

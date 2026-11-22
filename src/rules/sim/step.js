@@ -15,10 +15,27 @@ import { evActive, receiversOf } from './make.js';
 import { promote } from './cards.js';
 
 // Un pas de DT secondes du modèle de flux : modifie S sur place et renvoie le relevé du pas (tick).
+// Chaque étape lit dans X ce que les précédentes ont calculé pendant ce pas, et y range ses propres résultats.
 export function stepSim(S) {
   if (S.done) return null;
-  const L = S.level, t = S.t, st = S.settings;
-  // ---- événements ponctuels
+  const X = {};
+  fireEvents(S);
+  autoFailover(S);
+  instantParams(S, X);
+  userVolumes(S, X);
+  stepServers(S, X);
+  stepConnections(S, X);
+  routeRequests(S, X);
+  stepDatabase(S, X);
+  stepWorkers(S, X);
+  settleRetries(S, X);
+  stepAutoscaling(S, X);
+  return recordTick(S, X);
+}
+
+// ---- événements ponctuels
+function fireEvents(S) {
+  const L = S.level, t = S.t;
   (L.events || []).forEach((e, k) => {
     if (S.fired[k] || e.t == null || t < e.t) return;
     S.fired[k] = true;
@@ -41,12 +58,20 @@ export function stepSim(S) {
       if (S.primary && S.primary.brick.opts.legacy) { S.primary.alive = false; S.log.push({ t, msg: 'L’ancienne base est éteinte' }); }
     }
   });
-  // ---- failover automatique
+}
+
+// ---- failover automatique
+function autoFailover(S) {
+  const t = S.t;
   if (S.primary && !S.primary.alive) {
     if (S.failoverAt == null) S.failoverAt = t + FAILOVER_DELAY;
     if (t >= S.failoverAt) promote(S, true);
   }
-  // ---- paramètres de l'instant
+}
+
+// ---- paramètres de l'instant
+function instantParams(S, X) {
+  const L = S.level, t = S.t, st = S.settings;
   const T = L.rps * L.profile(t);
   const api = { lat: (L.api && L.api.lat) || API_DEFAULT_LAT, err: (L.api && L.api.err) || 0 };
   evActive(L, 'apiSlow', t).forEach(e => { api.lat = e.lat != null ? e.lat : api.lat; api.err = e.err != null ? e.err : api.err; });
@@ -73,7 +98,13 @@ export function stepSim(S) {
     if (S.coldStart != null && t - S.coldStart < CACHE_WARMUP && !S.cache.opts.antiRuee) stampede = STAMPEDE_LOAD;
     staleShare = tt.stale;
   }
-  // ---- volumes utilisateurs (non amplifiés)
+  Object.assign(X, { T, api, bots, mix, apiBad, brkOpen, timeoutMs, COST, cacheAlive, hit, stampede, staleShare });
+}
+
+// ---- volumes utilisateurs (non amplifiés)
+function userVolumes(S, X) {
+  const t = S.t, st = S.settings;
+  const { T, api, bots, mix, brkOpen, hit } = X;
   const U = {}; CLASSES.forEach(c => (U[c] = T * (mix[c] || 0)));
   const recoOff = S.recoOff;
   const r = st.retries;
@@ -98,7 +129,13 @@ export function stepSim(S) {
   const cdnAlive = !!(S.cdn && S.cdn.alive);
   let statIn = att.static;
   if (cdnAlive) { okA('static', statIn, BASE_LAT + CDN_LAT); statIn = 0; }
-  // ---- étage serveurs
+  Object.assign(X, { U, recoOff, r, ampReco, blockedFrac, botsPass, att, tk, A, G, failA, okA, statIn });
+}
+
+// ---- étage serveurs
+function stepServers(S, X) {
+  const L = S.level, t = S.t, st = S.settings;
+  const { COST, cacheAlive, r, botsPass, att, tk, A, G, failA, okA, statIn } = X;
   const recv = receiversOf(S);
   tk.receivers = recv.length;
   const userRegions = Object.keys(L.regions || { eu: 1 });
@@ -185,14 +222,25 @@ export function stepSim(S) {
       if (bv > 0) D.dbReads.push({ c: 'bot', v: bv, g, u: null, base: 0, bot: true });
     });
   }
-  // ---- connexions
+  Object.assign(X, { recv, sessFrac, D, serverRows });
+}
+
+// ---- connexions
+function stepConnections(S, X) {
+  const { recv, tk } = X;
   let conns = recv.reduce((a, s) => a + s.conns, 0) + S.workers.filter(w => w.alive).length * WORKER_CONNS;
   if (S.pooler && S.pooler.alive) conns = Math.min(conns, POOLER_MAX_CONN);
   const prim = S.primary && S.primary.alive ? S.primary : null;
   const maxConn = prim ? prim.maxConn : 0;
   const connFail = prim && conns > maxConn ? 1 - maxConn / conns : 0;
   tk.conns = conns; tk.maxConn = maxConn;
-  // ---- aiguillage applicatif
+  Object.assign(X, { prim, connFail });
+}
+
+// ---- aiguillage applicatif
+function routeRequests(S, X) {
+  const L = S.level;
+  const { api, brkOpen, timeoutMs, cacheAlive, hit, stampede, staleShare, A, failA, okA, D, serverRows, prim, connFail } = X;
   const wAlive = S.workers.filter(w => w.alive).length;
   const queueAlive = !!(S.queue && S.queue.alive);
   const objAlive = !!(S.objstore && S.objstore.alive);
@@ -248,7 +296,12 @@ export function stepSim(S) {
       }
     }
   }
-  // ---- étage base
+  Object.assign(X, { wAlive, dbNodes, directWrites });
+}
+
+// ---- étage base
+function stepDatabase(S, X) {
+  const { tk, failA, okA, D, prim, dbNodes, directWrites } = X;
   const nodeLoad = dbNodes.map(() => 0);
   const placeRead = rd => {
     // retourne liste [nodeIndex, part]
@@ -276,7 +329,12 @@ export function stepSim(S) {
     }
   }
   if (prim) for (const w of directWrites) { failA(w.c, w.v * (1 - nodeServed[0]), 'dbSat'); okA(w.c, w.v * nodeServed[0], w.base + dbLat(nodeRho[0]) + DIST[w.g][prim.region]); }
-  // ---- workers
+  Object.assign(X, { nodeLoad, directW, nodeRho, nodeServed, pStale });
+}
+
+// ---- workers
+function stepWorkers(S, X) {
+  const { apiBad, brkOpen, D, prim, wAlive, nodeLoad, directW, nodeRho } = X;
   S.backlog.write += D.jobs.write * DT; S.backlog.upload += D.jobs.upload * DT; S.backlog.pay += D.jobs.pay * DT;
   let wcap = wAlive * WORKER_RATE * DT;
   let drained = { write: 0, upload: 0, pay: 0 };
@@ -288,7 +346,12 @@ export function stepSim(S) {
   }
   { const d = Math.min(S.backlog.upload, wcap); S.backlog.upload -= d; wcap -= d; drained.upload = d; }
   S.lastWriteRate = directW + drained.write / DT;
-  // ---- retries : passage tentatives -> utilisateurs
+  X.drained = drained;
+}
+
+// ---- retries : passage tentatives -> utilisateurs
+function settleRetries(S, X) {
+  const { U, recoOff, r, ampReco, blockedFrac, A } = X;
   const finish = (gk, users) => {
     const g = A[gk];
     const vol = Math.max(1e-9, g.vol);
@@ -321,7 +384,13 @@ export function stepSim(S) {
   }
   acc.stale += A.main.stale * fm.k * DT; acc.cachedOk += A.main.cached * fm.k * DT;
   acc.recoTot += U.reco * DT; acc.recoOk += fr.okU * DT;
-  // ---- autoscaling
+  Object.assign(X, { fm, mainU, blockedMain });
+}
+
+// ---- autoscaling
+function stepAutoscaling(S, X) {
+  const t = S.t;
+  const { tk } = X;
   if (S.group && S.group.brick.alive) {
     const gr = S.group, o = gr.brick.opts;
     const mine = tk.servers.filter(x => x.kind === 'auto');
@@ -336,7 +405,11 @@ export function stepSim(S) {
     gr.instSec += gr.inst.filter(x => x.alive).length * DT;
     tk.autoCount = gr.inst.filter(x => x.alive).length; tk.autoReady = gr.inst.filter(x => x.alive && t >= x.readyAt).length;
   }
-  // ---- état visuel
+}
+
+// ---- état visuel
+function recordTick(S, X) {
+  const { bots, apiBad, hit, stampede, blockedFrac, botsPass, tk, sessFrac, prim, connFail, dbNodes, nodeRho, nodeServed, pStale, drained, fm, mainU, blockedMain } = X;
   const fMain = fm.f;
   tk.availNow = mainU > 0 ? (fm.okU / (mainU + blockedMain)) * 100 : 100;
   tk.vis = { fMain, sessFrac, connFail, hit, stampede, pStale, apiBad, blockedFrac, botsPass, bots };
