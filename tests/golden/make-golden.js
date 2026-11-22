@@ -1,5 +1,7 @@
-// Génère golden.json à partir du prototype d'origine, tel que committé avant le refactor.
+// Génère golden.json, à partir du prototype d'origine tel que committé avant le refactor,
+// ou à partir du moteur actuel après un changement de règle voulu.
 // Usage : node tests/golden/make-golden.js [révision git, défaut f6479f6]
+//         node tests/golden/make-golden.js --current
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -17,7 +19,8 @@ function loadOriginalEngine(rev) {
   return vm.runInNewContext(`${engine}\n${revenue}\n({ ${NAMES.join(', ')} })`, {});
 }
 
-const engine = loadOriginalEngine(ORIGINAL_REV);
+const current = process.argv[2] === '--current';
+const engine = current ? (await import('./current-engine.js')).engine : loadOriginalEngine(ORIGINAL_REV);
 const out = new URL('./golden.json', import.meta.url);
 writeFileSync(out, JSON.stringify(snapshot(engine)));
-console.log('golden.json écrit depuis', ORIGINAL_REV);
+console.log('golden.json écrit depuis', current ? 'le moteur actuel (src/)' : ORIGINAL_REV);
