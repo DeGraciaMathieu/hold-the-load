@@ -62,11 +62,9 @@ Aucune dépendance. Chaque fichier importe `test` de `node:test` et `assert` de 
 
 ## Mettre à jour l'instantané (décision du 2026-11-22, `docs/decisions.md`)
 
-`make-golden.js` ne sait charger que le prototype mono-fichier : il ne capture pas une règle nouvelle. Décision : lui ajouter une option `--current` qui fait le `snapshot` depuis les modules de `src/`, avec les mêmes `cases.js`. `golden.test.js` listera alors tous les cas qui diffèrent.
+`make-golden.js` a deux modes. Sans argument (ou avec une révision git), il extrait le moteur du prototype : c'est l'historique. Avec `--current`, il fait le `snapshot` depuis les modules de `src/` (`tests/golden/current-engine.js`), avec les mêmes `cases.js`. `golden.test.js` liste tous les cas qui diffèrent, pas seulement le premier.
 
-**Pas encore implémenté.** Tant que ce n'est pas fait, un changement de règle voulu commence par cette option, en accord avec l'utilisateur.
-
-Déroulé, une fois l'option en place :
+Déroulé d'un changement de règle voulu :
 
 1. La règle change et `golden.test.js` échoue.
 2. Vérifier que seuls les cas attendus bougent.

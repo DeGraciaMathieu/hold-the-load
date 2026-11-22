@@ -170,7 +170,8 @@ Tranchées le 2026-11-22, à la mise en place de l'outillage Claude Code.
   les mêmes `cases.js`. Déroulé : la règle change, `golden.test.js` échoue, on vérifie que
   seuls les cas attendus bougent, on régénère dans le même commit et on le dit dans le
   message. `golden.test.js` listera tous les cas qui diffèrent au lieu de s'arrêter au
-  premier. Le mode prototype reste pour l'historique. **Pas encore implémenté.**
+  premier. Le mode prototype reste pour l'historique. Fait : `tests/golden/current-engine.js`
+  porte le moteur actuel, partagé par `golden.test.js` et `make-golden.js --current`.
 - **Découpage de `stepSim`** : fait avant l'ajout du cloisonnement (`docs/prd-cloisonnement.md`).
   Une fonction par bloc `// ----` (`fireEvents`, `stepServers`, `stepDatabase`…), qui modifie
   toujours `S`. Les étapes d'un même pas se passent leurs résultats dans un objet `X` créé
