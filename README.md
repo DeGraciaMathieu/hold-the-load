@@ -1,49 +1,49 @@
 # Tenir la charge
 
-> **Ouvrir `index.html` en double-cliquant ne marche plus.** Le jeu est découpé en modules
-> ES natifs, que le navigateur refuse de charger depuis `file://`. Lance un serveur local :
->
-> ```sh
-> npm run dev
-> ```
->
-> puis ouvre l'adresse affichée (par défaut http://localhost:3000).
+Pose des serveurs, des caches, des files et des bases de données, puis regarde ton
+infrastructure encaisser le trafic, les pannes et les attaques. Ou s'effondrer.
 
-Jeu d'architecture web : pose des serveurs, caches, files et bases sur un plateau, puis
-regarde ton infrastructure encaisser le trafic, les pannes et les attaques. Trois modes :
-19 missions, Croissance (tours générés, trésorerie à tenir) et Défi du jour.
+<p align="center">
+  <img src="docs/capture.png" alt="Mission « Black Friday » : un load balancer, deux serveurs, Redis, une file, deux workers et une base, tous les objectifs tenus" width="320">
+</p>
 
-## Prérequis
+## Comment on joue
 
-Node 22 ou plus. Aucune dépendance à installer.
+1. Touche une case du plateau pour y poser une brique : load balancer, serveur, cache,
+   file de messages, base, réplique…
+2. Règle-la si besoin : taille du serveur, durée de vie du cache, mode du pare-feu.
+3. Lance. Les requêtes traversent ton infra en direct, et les incidents prévus arrivent :
+   un serveur qui tombe, un pic de trafic, un botnet, l'API de paiement qui rame…
+4. Tiens les objectifs de **disponibilité**, de **latence** et de **budget**.
 
-## Commandes
+Chaque brique a son prix et ses limites. Le défi est de tenir sans sur-dimensionner.
 
-| Commande | Effet |
-| --- | --- |
-| `npm run dev` | sert le dossier avec `npx serve .` |
-| `npm test` | lance les tests (`node --test`) |
-| `npm run test:watch` | relance les tests à chaque modification |
-| `node tests/golden/make-golden.js` | régénère l'instantané de référence depuis le prototype d'origine (commit `f6479f6`) |
+## Trois modes
 
-`tests/golden.test.js` vérifie que le moteur rend exactement les mêmes résultats que le
-prototype d'origine sur 1 506 simulations. Un échec veut dire qu'une règle du jeu a changé.
+- **Missions** : 19 situations écrites à la main, du premier client à la migration à chaud,
+  en passant par le Black Friday et la panne de région.
+  Trois étoiles débloquent la suivante.
+- **Croissance** : des tours générés, avec un trafic qui grossit à chaque tour. Ton infra
+  doit rapporter plus qu'elle ne coûte, sinon c'est la faillite.
+- **Défi du jour** : le même niveau pour tout le monde, renouvelé chaque jour. Le record,
+  c'est l'infra la moins chère qui tient.
 
-## Organisation
+## Jouer en local
 
+Il faut Node 22 ou plus. Il n'y a rien à installer.
+
+```sh
+npm run dev
 ```
-index.html          squelette de la page
-css/style.css       styles
-src/
-  config.js         constantes de réglage
-  content/          catalogue des briques, missions, textes
-  rules/            règles pures (latence, coûts, objectifs, Croissance, génération)
-    sim/            simulation : création, pas, cartes, bilan
-  state/            sauvegarde et contexte courant
-  render/           canvas, particules, panneaux, feuilles et modales
-  input/            écouteurs du DOM
-  loop/             déroulé d'un run et boucle d'animation
-  main.js           câblage
-tests/              un fichier de tests par règle, plus l'instantané de référence
-docs/decisions.md   choix du découpage, exceptions, questions ouvertes
+
+Ouvre ensuite l'adresse affichée (par défaut http://localhost:3000). Ouvrir `index.html`
+en double-cliquant ne marche pas : le navigateur bloque les modules du jeu en `file://`.
+
+## Développer
+
+```sh
+npm test
 ```
+
+Les choix d'architecture sont dans [`docs/decisions.md`](docs/decisions.md), les
+conventions dans [`CLAUDE.md`](CLAUDE.md).
