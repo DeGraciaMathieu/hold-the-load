@@ -4,7 +4,7 @@ import { REGION_SHORT } from '../content/texts.js';
 // Couleurs, tailles de texte et rayon du plateau, lus dans les variables CSS de :root : le DOM et le canvas partagent une seule source.
 export const C = {}, BRICK = {}, REGION = {}, CT = {};
 const COLOR_VARS = { ink: 'ink', card: 'card', surface: 'surface', text2: 'text-2', muted: 'muted', ok: 'ok', warn: 'warn', bad: 'bad', badBg: 'bad-bg',
-  inkSoft: 'ink-soft', inkFaint: 'ink-faint', bot: 'bot', job: 'job', dead: 'dead', temp: 'temp', alarm: 'alarm' };
+  note: 'note', inkSoft: 'ink-soft', inkFaint: 'ink-faint', bot: 'bot', job: 'job', dead: 'dead', temp: 'temp', alarm: 'alarm' };
 
 export function loadTheme() {
   const cs = getComputedStyle(document.documentElement), v = name => cs.getPropertyValue('--' + name).trim();

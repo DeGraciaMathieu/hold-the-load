@@ -1,21 +1,20 @@
 import { DT, SPEED_FAST, SKIP_GUARD_MS } from '../config.js';
-import { ROW_DEF } from '../content/catalog.js';
+import { ROW_DEF, CATALOG } from '../content/catalog.js';
 import { makeSim } from '../rules/sim/make.js';
 import { stepSim } from '../rules/sim/step.js';
 import { resultOf } from '../rules/sim/result.js';
 import { ST, save } from '../state/store.js';
 import { CUR, RUN, setRun, lay, sets } from '../state/context.js';
-import { $ } from '../render/dom.js';
-import { G, K, layout } from '../render/geometry.js';
-import { drawIfNeeded, invalidate, setHover } from '../render/board.js';
+import { $, DESK } from '../render/dom.js';
+import { G, layout } from '../render/geometry.js';
+import { drawIfNeeded, invalidate, setHover, setPick, picked } from '../render/board.js';
 import { particles, clearParticles, spawn, spawnJob, stepParticles } from '../render/particles.js';
-import { renderGoals, refresh, renderCards, liveGoals } from '../render/panels.js';
-import { toast, addSheet, editSheet, showResult, blockedByRun, layerOpen, closeAll } from '../render/dialogs.js';
+import { renderGoals, refresh, renderCards, liveGoals, renderBench, focusSlot } from '../render/panels.js';
+import { toast, addSheet, editSheet, placeBrick, showResult, blockedByRun, layerOpen, closeAll } from '../render/dialogs.js';
 import { C } from '../render/theme.js';
 
 // ---------- intentions du joueur ----------
 function slotAt(x, y) {
-  x /= K; y /= K; // pixels CSS → coordonnées du plateau
   for (const r of ROW_DEF) {
     const i = G.rows[r.key].slots.findIndex(s => x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h);
     if (i >= 0) return { row: r.key, i };
@@ -25,7 +24,13 @@ function slotAt(x, y) {
 export function clickBoard(x, y) {
   if (blockedByRun()) return;
   const slot = slotAt(x, y);
-  if (slot) (lay()[slot.row][slot.i] ? editSheet : addSheet)(slot.row, slot.i);
+  if (!slot) return;
+  const t = picked();
+  setPick(null);
+  if (lay()[slot.row][slot.i]) editSheet(slot.row, slot.i);
+  else if (t && CATALOG[t].row === slot.row) placeBrick(t, slot.row, slot.i);
+  else if (DESK.matches) focusSlot(slot); // desktop : le catalogue met la rangée de la case en avant
+  else addSheet(slot.row, slot.i);
 }
 export function hoverBoard(x, y) {
   const slot = RUN || x == null ? null : slotAt(x, y);
@@ -45,7 +50,7 @@ export function relayout() { if (layout()) { clearParticles(); invalidate(); } }
 
 // ---------- run ----------
 function startRun() {
-  closeAll(); // l'inspecteur reste ouvert sur desktop : on le ferme avant de lancer
+  closeAll(); setPick(null); // l'inspecteur et la brique choisie ne survivent pas au lancement
   const S = makeSim(CUR.level, lay(), sets());
   setRun({ S, tk: null, startedAt: performance.now(), speed: SPEED_FAST, acc: 0, logN: 0, spawnAcc: 0, jobAcc: 0 });
   stepSim(S); RUN.tk = S.ticks[S.ticks.length - 1];
@@ -71,7 +76,7 @@ function endRun() {
   document.body.classList.remove('running');
   $('cards').classList.remove('on'); $('speed').style.display = 'none';
   $('run').textContent = 'Lancer ▶'; $('run').classList.add('go');
-  $('hint').textContent = 'Touche une case pour poser une brique, une brique pour la régler.';
+  renderBench();
   (ST.lastRes ||= {})[CUR.key] = { avail: res.avail, p95: res.p95, cost: res.cost, fresh: res.fresh, recos: res.recos, ok: res.ok };
   renderGoals(res);
   showResult(res);

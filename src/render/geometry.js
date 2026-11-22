@@ -1,6 +1,6 @@
 import { ROW_DEF } from '../content/catalog.js';
 import { lay, RUN } from '../state/context.js';
-import { $ } from './dom.js';
+import { $, DESK } from './dom.js';
 
 // ---------- canvas ----------
 const board = $('board');
@@ -10,21 +10,18 @@ export const FONT = (w, s) => `${w} ${s}px "JetBrains Mono", ui-monospace, monos
 const COLS = Math.max(...ROW_DEF.map(r => r.slots)); // toutes les rangées partagent cette grille
 const LABEL_GUTTER = 104; // px de libellés de rangée à gauche quand le plateau est large
 const GUTTER_MIN_W = 560; // largeur de plateau à partir de laquelle les libellés passent dans la gouttière
-const BASE_W = 620; // largeur logique de référence : gouttière + 5 cases de 96 px
-const MAX_SCALE = 1.4; // agrandissement maximal du plateau sur grand écran
-export let K = 1; // échelle d'affichage : coordonnées logiques × K = pixels CSS
-let CW = 0, dpr0 = 0; // largeur CSS et densité d'écran au dernier calcul
-// Ne recalcule (et ne réalloue le canvas) que si la largeur ou la densité d'écran a changé ; renvoie true dans ce cas.
-// Au-delà de BASE_W, le plateau garde ses coordonnées logiques et le canvas les dessine à l'échelle K.
+const DESK_SLOT_W = 104, DESK_ROW_GAP = 80; // desktop : cases de taille fixe, la hauteur disponible va entre les couches
+let CW = 0, dpr0 = 0, desk0 = null; // largeur CSS, densité d'écran et mode desktop au dernier calcul
+// Ne recalcule (et ne réalloue le canvas) que si la largeur, la densité d'écran ou le mode desktop a changé ; renvoie true dans ce cas.
 export function layout() {
-  const cw = board.clientWidth || 360, dpr = window.devicePixelRatio || 1;
-  if (G.rows && cw === CW && dpr === dpr0) return false;
-  CW = cw; dpr0 = dpr;
-  K = Math.min(MAX_SCALE, Math.max(1, cw / BASE_W));
-  W = cw / K;
-  const pad = 6, gap = 6;
+  const cw = board.clientWidth || 360, dpr = window.devicePixelRatio || 1, desk = DESK.matches;
+  if (G.rows && cw === CW && dpr === dpr0 && desk === desk0) return false;
+  CW = cw; dpr0 = dpr; desk0 = desk;
+  W = cw;
+  const pad = 6, gap = desk ? 14 : 6, rowGap = desk ? DESK_ROW_GAP : 22;
   const gutter = W >= GUTTER_MIN_W ? LABEL_GUTTER : 0;
-  const sw = Math.min(96, (W - pad * 2 - gutter - gap * (COLS - 1)) / COLS), sh = 58;
+  const fit = (W - pad * 2 - gutter - gap * (COLS - 1)) / COLS;
+  const sw = Math.min(desk ? DESK_SLOT_W : 96, fit), sh = 58;
   const gridW = COLS * sw + (COLS - 1) * gap;
   const bx = (W - gutter - gridW) / 2, gx = bx + gutter; // bloc libellés + grille centré
   const rowTop = gutter ? 0 : 12; // en étroit, le libellé passe au-dessus des cases
@@ -32,11 +29,11 @@ export function layout() {
   let y = 58;
   for (const r of ROW_DEF) {
     G.rows[r.key] = { labelX: bx, labelY: gutter ? y + sh / 2 : y, slots: [...Array(r.slots)].map((_, i) => ({ x: gx + i * (sw + gap), y: y + rowTop, w: sw, h: sh })) };
-    y += rowTop + sh + 22;
+    y += rowTop + sh + rowGap;
   }
-  H = y - 6;
-  board.style.height = H * K + 'px'; board.width = cw * dpr; board.height = H * K * dpr;
-  ctx.setTransform(dpr * K, 0, 0, dpr * K, 0, 0);
+  H = y - rowGap + 16; // place pour la jauge sous la dernière rangée
+  board.style.height = H + 'px'; board.width = cw * dpr; board.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return true;
 }
 export const center = (row, i) => { const s = G.rows[row].slots[i]; return { x: s.x + s.w / 2, y: s.y + s.h / 2 }; };

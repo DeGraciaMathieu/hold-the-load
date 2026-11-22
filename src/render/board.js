@@ -3,7 +3,7 @@ import { ROW_DEF, CATALOG, GLOBAL } from '../content/catalog.js';
 import { REGION_SHORT } from '../content/texts.js';
 import { defaultOpts, brickCost } from '../rules/layout.js';
 import { CUR, RUN, lay, regionsOf, mixNow, hasPay } from '../state/context.js';
-import { fmt } from './dom.js';
+import { fmt, DESK } from './dom.js';
 import { ctx, W, H, G, FONT, center, placed, rr, tempSlots } from './geometry.js';
 import { particles, bursts } from './particles.js';
 import { C, BRICK, REGION, CT } from './theme.js';
@@ -194,6 +194,12 @@ function drawBrick(b, s, st, label, extra) {
   }
 }
 
+function plus(s, color) { ctx.fillStyle = color; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, s.y + s.h / 2); }
+function drawTarget(s, short) {
+  ctx.save(); ctx.setLineDash([6, 4]); ctx.fillStyle = C.note; ctx.strokeStyle = C.ink; ctx.lineWidth = 2; rr(s.x, s.y, s.w, s.h, CT.r); ctx.fill(); ctx.stroke(); ctx.restore();
+  ctx.fillStyle = C.ink; ctx.font = FONT(800, CT.m); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+ ' + short, s.x + s.w / 2, s.y + s.h / 2);
+}
+
 // Hors run et sans particule, le plateau ne bouge pas : on ne le redessine qu'après un changement signalé.
 let dirty = true;
 export const invalidate = () => { dirty = true; };
@@ -201,6 +207,10 @@ let hover = null; // case survolée à la souris, hors run
 const hovered = (row, i) => !RUN && hover?.row === row && hover?.i === i;
 let selected = null; // case ouverte dans la feuille ou l'inspecteur
 export function setSelected(slot) { selected = slot; invalidate(); }
+export const selectedSlot = () => selected;
+let pick = null; // type choisi dans le catalogue desktop, en attente d'une case
+export function setPick(type) { pick = type; invalidate(); }
+export const picked = () => pick;
 const isSelected = (row, i) => !RUN && selected?.row === row && selected?.i === i;
 const lifted = (row, i) => hovered(row, i) || isSelected(row, i);
 const LIFT = 2; // px dont une case survolée se soulève, son ombre s'allonge d'autant
@@ -240,16 +250,20 @@ export function draw() {
           drawBrick({ type: 'server' }, s, st, 'RENFORT', { temp: true });
           return;
         }
+        // brique choisie dans le catalogue : seules les cases libres de sa rangée s'allument
+        if (pick && !RUN) { if (CATALOG[pick].row === r.key) drawTarget(s, CATALOG[pick].short); return; }
         // case vide survolée : elle devient un bouton (fond carte, bord encre, ombre), le + passe à l'encre
         if (lifted(r.key, i)) {
           const y = s.y - LIFT;
           ctx.fillStyle = C.ink; rr(s.x, s.y + 3, s.w, s.h, CT.r); ctx.fill();
           ctx.fillStyle = C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; rr(s.x, y, s.w, s.h, CT.r); ctx.fill(); ctx.stroke();
-          ctx.fillStyle = C.ink; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, y + s.h / 2);
+          plus({ ...s, y }, C.ink);
           return;
         }
+        // desktop : un + discret, le cadre n'apparaît qu'au survol
+        if (DESK.matches) { if (!RUN) plus(s, C.inkSoft); return; }
         ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = C.inkSoft; ctx.lineWidth = 1.4; rr(s.x, s.y, s.w, s.h, CT.r); ctx.stroke(); ctx.restore();
-        if (!RUN) { ctx.fillStyle = C.inkSoft; ctx.font = FONT(400, 18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', s.x + s.w / 2, s.y + s.h / 2); }
+        if (!RUN) plus(s, C.inkSoft);
         return;
       }
       const st = liveNode(b, r.key, i);
