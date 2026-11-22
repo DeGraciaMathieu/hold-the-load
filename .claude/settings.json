@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/run-tests.sh\"",
+            "timeout": 120,
+            "statusMessage": "Lancement des tests…"
+          },
+          {
+            "type": "agent",
+            "prompt": "Tu vérifies que la documentation vivante du jeu « Tenir la charge » reste fidèle au code. Les règles chiffrées sont dans src/config.js (constantes) et dans la simulation (src/rules/). La documentation vivante, c'est la prose écrite à la main qui recopie ces valeurs : les champs desc, les help et les libellés de choix (ex. « Petit · 25 € ») dans src/content/catalog.js ; les desc de CARDS dans src/content/texts.js ; les story des missions dans src/content/levels.js (à confronter aux champs rps, duration, events, cards de la même mission) ; les msg rendus par useCard dans src/rules/sim/cards.js (ex. « Serveur en route (5 s) ») ; les textes en dur de src/render/panels.js (ex. « démarre à 300 », « si dispo ≥ 99 % », « timeout 0,8 s / 5 s ») et de src/render/dialogs.js (ex. « −30 % pour la lenteur ») ; l'aide clavier et les indications de index.html et de src/loop/run.js ; les commandes et l'organisation décrites dans README.md. À IGNORER complètement : tout ce qui est calculé au moment du rendu à partir de config.js, de LEVELS ou de CATALOG (revenu max via campRevenue, étoiles via MAX_STARS, LEVELS.length, noms de briques injectés, montants passés par fmt), ainsi que les story générées par genLevel et dailyLevel dans src/rules/procgen.js. Lance : git diff HEAD -- src index.html README.md. Si rien de pertinent n'a changé, ou si chaque texte concerné décrit encore fidèlement le code modifié, réponds exactement : accept. Sinon réponds : block, puis liste chaque passage périmé : cite-le, donne son emplacement (fichier et clé ou ligne) et indique la correction que le code impose désormais. Ne réécris pas la documentation toi-même et ne signale aucun problème de style.",
+            "model": "claude-sonnet-5-5",
+            "timeout": 120,
+            "statusMessage": "Vérification de la synchro de la documentation…"
+          }
+        ]
+      }
+    ]
+  }
+}
