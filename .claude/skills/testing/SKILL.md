@@ -39,6 +39,8 @@ Aucune dépendance. Chaque fichier importe `test` de `node:test` et `assert` de 
 | `tests/sim-cards.test.js` | `useCard` (consommation, renfort, relance, promotion), `promote` |
 | `tests/sim-step.test.js` | `stepSim` : sticky, retries en saturation, ruée sur le cache, WAF strict, fin de partie |
 | `tests/sim-result.test.js` | `resultOf`, `runAll` : mission 1 tenue, absence de serveur, coût du renfort |
+| `tests/store.test.js` | `migrateSave` : recalage de la mission en cours après une insertion |
+| `tests/missions.test.js` | chaque mission se gagne en trois étoiles avec sa solution de référence (`tests/solutions.js`) |
 | `tests/golden.test.js` | **tout le moteur** comparé à l'instantané `tests/golden/golden.json` |
 
 ## Instantané de référence (`tests/golden/`)
@@ -57,7 +59,7 @@ Aucune dépendance. Chaque fichier importe `test` de `node:test` et `assert` de 
 | règle de `src/rules/sim/x.js` | `tests/sim-x.test.js` |
 | nouveau module de règles | un nouveau `tests/<module>.test.js`, même gabarit d'imports |
 | nouvelle brique ou nouvel incident | `tests/sim-step.test.js`, plus `tests/sim-result.test.js` pour l'effet sur le bilan |
-| nouvelle mission | `tests/sim-result.test.js` : un plateau de référence tient ses objectifs (`goalsMet`) |
+| nouvelle mission | sa solution dans `tests/solutions.js`, trouvée avec `npm run solve -- <id>` (le test `missions.test.js` échoue tant qu'elle manque) |
 | rendu, DOM, boucle | pas de test automatisé aujourd'hui : vérifier dans le navigateur (`npm run dev`) |
 
 ## Mettre à jour l'instantané (décision du 2026-11-22, `docs/decisions.md`)
@@ -70,3 +72,11 @@ Déroulé d'un changement de règle voulu :
 2. Vérifier que seuls les cas attendus bougent.
 3. Régénérer avec `node tests/golden/make-golden.js --current`, dans le même commit que la règle.
 4. Le dire dans le message de commit.
+
+## Équilibrage des missions (`npm run solve`)
+
+L'instantané dit si le moteur a changé, pas si une mission reste gagnable. `tests/missions.test.js` rejoue la solution de référence de chaque mission (`tests/solutions.js`) et vérifie les trois étoiles et le coût.
+
+- `scripts/solve.mjs` (`npm run solve -- <id> [--budget €] [--max parties] [--marge €] [--json]`) essaie les infras de la moins chère à la plus chère, avec les réglages et les moments de jeu des cartes, et affiche les moins chères qui gagnent.
+- Il écarte ce qui ne sert pas à la mission (pare-feu sans attaque, disjoncteur sans paiements, lectures sensibles sans objectif de fraîcheur…) et, avec des régions, réduit la combinatoire. Une solution qu'il ne trouve pas reste donc possible : `--max` et `--budget` permettent d'aller plus loin.
+- Après un changement de règle ou d'un objectif de mission, si `missions.test.js` échoue : relancer le solveur sur la mission, reporter la nouvelle solution dans `tests/solutions.js` et, si elle change, dans `docs/solutions.md`.

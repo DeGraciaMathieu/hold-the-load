@@ -43,7 +43,11 @@ en double-cliquant ne marche pas : le navigateur bloque les modules du jeu en `f
 
 ```sh
 npm test
+npm run solve -- m12    # infras trois étoiles les moins chères d'une mission
 ```
+
+Les solutions de référence de chaque mission sont dans [`tests/solutions.js`](tests/solutions.js), et
+[`docs/solutions.md`](docs/solutions.md) les explique.
 
 Les choix d'architecture sont dans [`docs/decisions.md`](docs/decisions.md), les
 conventions dans [`CLAUDE.md`](CLAUDE.md).
