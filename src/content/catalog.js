@@ -20,6 +20,8 @@ export const CATALOG = {
     desc: 'Groupe de serveurs moyens qui s’ajoutent seuls quand la charge dépasse le seuil. Payé à l’usage (40 € par instance en moyenne), mais chaque instance met 6 s à démarrer. Nécessite un load balancer.' },
   worker: { row: 'app', name: 'Worker', short: 'WRK', cost: () => 30,
     desc: 'Dépile les tâches de fond : écritures en file, traitement des uploads, paiements différés. 250 tâches/s chacun.' },
+  bulkhead: { row: 'app', name: 'Cloisonnement', short: 'CLOIS', cost: () => 45, opts: { cls: 'pay' },
+    desc: 'Un serveur réservé à une classe de requêtes : 400 req/s rien que pour elle. Si elle rame ou explose, le reste du site continue de répondre. Il faut un load balancer.' },
   cache: { row: 'svc', name: 'Cache Redis', short: 'REDIS', unique: true, cost: o => 35 + (o.antiRuee ? 10 : 0), opts: { ttl: 'moyen', antiRuee: false },
     desc: 'Sert une partie des lectures depuis la mémoire et stocke les sessions de façon partagée. La durée de vie arbitre entre taux de succès et fraîcheur.' },
   queue: { row: 'svc', name: 'File de messages', short: 'FILE', unique: true, cost: () => 25,
@@ -48,6 +50,7 @@ export const OPT_DEFS = {
     help: { rr: 'Chaque serveur reçoit la même part, quelle que soit sa taille.', sticky: 'Un utilisateur reste sur le même serveur : les sessions marchent sans Redis, mais la charge est moins bien répartie (−15 % de capacité).', least: 'Envoie vers le serveur le moins chargé : indispensable si les tailles sont mélangées.' } }],
   waf: [{ k: 'mode', label: 'Filtrage', choices: [['souple', 'Souple'], ['strict', 'Strict']] }],
   server: [{ k: 'size', label: 'Taille', choices: [['s', 'Petit · 25 €'], ['m', 'Moyen · 40 €'], ['l', 'Gros · 85 €']] }],
+  bulkhead: [{ k: 'cls', label: 'Classe réservée', choices: [['pay', 'Paiements'], ['reco', 'Recos']] }],
   autoscale: [
     { k: 'min', label: 'Instances minimum', choices: [[1, '1'], [2, '2'], [3, '3'], [4, '4']] },
     { k: 'max', label: 'Instances maximum', choices: [[4, '4'], [6, '6'], [8, '8']] },

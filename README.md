@@ -20,7 +20,7 @@ Chaque brique a son prix et ses limites. Le défi est de tenir sans sur-dimensio
 
 ## Trois modes
 
-- **Missions** : 19 situations écrites à la main, du premier client à la migration à chaud,
+- **Missions** : 20 situations écrites à la main, du premier client à la migration à chaud,
   en passant par le Black Friday et la panne de région.
   Trois étoiles débloquent la suivante.
 - **Croissance** : des tours générés, avec un trafic qui grossit à chaque tour. Ton infra

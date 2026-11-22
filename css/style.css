@@ -7,7 +7,7 @@
   /* plateau : particules, états et briques */
   --bot: #8e44ad; --job: #b08900; --dead: #c9c2b4; --temp: #dfeaf5; --alarm: #a5281b;
   --brick-lb: #f4a259; --brick-cdn: #b8a1e3; --brick-waf: #e7a3b8; --brick-server: #9cc3e6; --brick-autoscale: #7fb0e0; --brick-worker: #a9d3cf; --brick-cache: #ef8a7c;
-  --brick-queue: #f2d36b; --brick-pooler: #d9c89c; --brick-breaker: #f0b27a; --brick-db: #8fd1a6; --brick-replica: #c4e6cf; --brick-objstore: #c9c3e8;
+  --brick-queue: #f2d36b; --brick-pooler: #d9c89c; --brick-breaker: #f0b27a; --brick-db: #8fd1a6; --brick-replica: #c4e6cf; --brick-objstore: #c9c3e8; --brick-bulkhead: #c3d49a;
   --region-eu: #3b6fd8; --region-us: #c0392b; --region-asia: #d18a00;
   /* texte : 5 tailles pour le DOM, 3 pour le plateau (unités du canvas) */
   --font: 'JetBrains Mono', ui-monospace, monospace;

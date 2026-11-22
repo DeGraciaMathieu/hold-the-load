@@ -66,9 +66,14 @@ export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); re
 export const slotName = (row, i) => { const r = ROW_DEF.find(x => x.key === row); return r.label.charAt(0) + r.label.slice(1).toLowerCase() + ' · case ' + (i + 1); };
 
 // Pourquoi une brique ne peut pas être posée : message long pour la feuille, mention courte pour le catalogue.
-const BLOCKS = { placed: { msg: 'Déjà en place.', tag: 'posé' }, noPrimary: { msg: 'Il faut d’abord une base primaire à copier.', tag: 'sans base' } };
+const BLOCKS = { placed: { msg: 'Déjà en place.', tag: 'posé' }, noPrimary: { msg: 'Il faut d’abord une base primaire à copier.', tag: 'sans base' },
+  bothWalled: { msg: 'Paiements et recos sont déjà cloisonnés.', tag: 'max 2' } };
+const BULKHEAD_CLASSES = OPT_DEFS.bulkhead[0].choices.map(c => c[0]);
+// Classes déjà cloisonnées, avec la case de chaque cloisonnement (sauf celui de la case `except`).
+const walledClasses = (L, except) => L.app.map((b, i) => (b && b.type === 'bulkhead' && i !== except ? { cls: b.opts.cls, i } : null)).filter(Boolean);
 export function brickBlock(L, t) {
   if (CATALOG[t].unique && hasType(L, t)) return BLOCKS.placed;
+  if (t === 'bulkhead' && walledClasses(L).length >= BULKHEAD_CLASSES.length) return BLOCKS.bothWalled;
   if (t === 'replica' && !hasType(L, 'db')) return BLOCKS.noPrimary;
   return null;
 }
@@ -77,6 +82,7 @@ export function placeBrick(t, row, i) {
   const lv = CUR.level, b = { type: t, opts: defaultOpts(t) };
   const regs = regionsOf(lv); if (regs) b.region = regs[0];
   if (t === 'lb' && !lbAlgosOf(lv).includes(b.opts.algo)) b.opts.algo = lbAlgosOf(lv)[0];
+  if (t === 'bulkhead') { const taken = walledClasses(lay()).map(x => x.cls); b.opts.cls = BULKHEAD_CLASSES.find(c => !taken.includes(c)); }
   lay()[row][i] = b; changed(); closeAll();
   if (CATALOG[t].opts || (regs && !GLOBAL.includes(t))) editSheet(row, i);
 }
@@ -110,7 +116,10 @@ export function editSheet(row, i) {
       if (b.type === 'lb') choices = choices.filter(c => lbAlgosOf(lv).includes(c[0]));
       if (b.type === 'db' && d.k === 'sensible' && !(lv.bricks.includes('replica'))) continue;
       if (b.opts && b.opts.legacy) continue;
-      html += `<div class="grp"><div class="lab">${d.label}</div><div class="seg">${choices.map(c => `<button data-k="${d.k}" data-v='${JSON.stringify(c[0])}' class="${o[d.k] === c[0] ? 'on' : ''}">${c[1]}</button>`).join('')}</div><div class="help">${d.help ? d.help[String(o[d.k])] || '' : ''}</div></div>`;
+      // un cloisonnement ne peut pas prendre la classe d'un autre
+      const other = b.type === 'bulkhead' ? walledClasses(L, i)[0] : null;
+      const help = other ? `${choices.find(c => c[0] === other.cls)[1]} déjà cloisonnés par la case ${other.i + 1}.` : d.help ? d.help[String(o[d.k])] || '' : '';
+      html += `<div class="grp"><div class="lab">${d.label}</div><div class="seg">${choices.map(c => `<button data-k="${d.k}" data-v='${JSON.stringify(c[0])}' class="${o[d.k] === c[0] ? 'on' : ''}"${other && other.cls === c[0] ? ' disabled' : ''}>${c[1]}</button>`).join('')}</div><div class="help">${help}</div></div>`;
     }
     if (regs && !GLOBAL.includes(b.type)) html += `<div class="grp"><div class="lab">Région</div><div class="seg">${regs.map(g => `<button data-reg="${g}" class="${(b.region || regs[0]) === g ? 'on' : ''}">${REGION_NAMES[g]}</button>`).join('')}</div></div>`;
     if (!b.locked) html += `<button class="opt rm" id="rmB"><span class="sw" style="background:var(--surface)">✕</span><span><b>Retirer</b><p>Libère la case.</p></span><span class="price">−${brickCost(b)} €</span></button>`;

@@ -9,7 +9,7 @@ const BR = {
   cache: ['server', 'db', 'lb', 'cache'],
   cdn: ['server', 'db', 'lb', 'cache', 'cdn', 'replica'],
   queue: ['server', 'db', 'lb', 'cache', 'cdn', 'replica', 'queue', 'worker'],
-  all: ['server', 'db', 'lb', 'cache', 'cdn', 'replica', 'queue', 'worker', 'autoscale', 'breaker', 'waf', 'pooler', 'objstore'],
+  all: ['server', 'db', 'lb', 'cache', 'cdn', 'replica', 'queue', 'worker', 'autoscale', 'breaker', 'waf', 'pooler', 'objstore', 'bulkhead'],
 };
 export const LEVELS = [
   {
@@ -109,14 +109,21 @@ export const LEVELS = [
     goals: { avail: 99, p95: 160, budget: 275, recos: 70 },
   },
   {
-    id: 'm16', title: 'Le monde entier', bricks: [...BR.queue, 'breaker', 'pooler'], sizes: true, settingsAllowed: ['timeout', 'retries', 'shed'],
+    id: 'm15b', title: 'Chacun son couloir', bricks: [...BR.queue, 'breaker', 'waf', 'pooler', 'bulkhead'], sizes: true, settingsAllowed: ['timeout'],
+    story: '1 200 req/s, dont 8 % de paiements. De la 6e à la 18e seconde, l’API de paiement répond en 750 ms : trop peu pour ouvrir le disjoncteur, assez pour que chaque paiement occupe un serveur huit fois plus longtemps qu’une page. Tu peux perdre des paiements, pas le site.',
+    rps: 1200, duration: 24, mix: mixOf({ read: 0.82, write: 0.1, pay: 0.08 }), profile: () => 1,
+    events: [{ type: 'apiSlow', from: 6, to: 18, lat: 750 }],
+    goals: { avail: 97, p95: 200, budget: 305 },
+  },
+  {
+    id: 'm16', title: 'Le monde entier', bricks: [...BR.queue, 'breaker', 'pooler', 'bulkhead'], sizes: true, settingsAllowed: ['timeout', 'retries', 'shed'],
     regions: { eu: 0.4, us: 0.35, asia: 0.25 },
     story: 'Tes clients sont à Paris, New York et Tokyo. Traverser l’Atlantique coûte 80 ms, le Pacifique 100, aller de Paris à Tokyo 120. Chaque brique se place dans une région.',
     rps: 1200, duration: 20, mix: mixOf({ static: 0.3, read: 0.65, write: 0.05 }), profile: () => 1,
     goals: { avail: 99, p95: 160, budget: 420 },
   },
   {
-    id: 'm17', title: 'Panne de région', bricks: [...BR.queue, 'breaker', 'pooler'], sizes: true, settingsAllowed: ['timeout', 'retries', 'shed'], cards: { promote: 1 },
+    id: 'm17', title: 'Panne de région', bricks: [...BR.queue, 'breaker', 'pooler', 'bulkhead'], sizes: true, settingsAllowed: ['timeout', 'retries', 'shed'], cards: { promote: 1 },
     regions: { eu: 0.6, us: 0.4 },
     story: 'Paris et New York. À la 10e seconde, la région qui héberge ta base primaire tombe en entier : serveurs, base, cache, file. Une réplique ailleurs est promue au bout de 5 s… si elle existe.',
     rps: 900, duration: 24, mix: mixOf({ read: 0.85, write: 0.15 }), profile: () => 1,

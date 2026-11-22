@@ -10,7 +10,7 @@ import { mixOf, wave } from '../content/levels.js';
 export function rng(seed) { let s = hashStr('s' + seed) || 1; const f = () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; for (let i = 0; i < 8; i++) f(); return f; }
 function hashStr(str) { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
 const UNLOCKS = [
-  ['server', 'db', 'lb'], ['cache'], ['cdn', 'replica'], ['queue', 'worker'], ['autoscale'], ['breaker', 'waf', 'pooler'], ['objstore'],
+  ['server', 'db', 'lb'], ['cache'], ['cdn', 'replica'], ['queue', 'worker'], ['autoscale'], ['breaker', 'waf', 'pooler', 'bulkhead'], ['objstore'],
 ];
 
 // round: 1..n ; difficulté croissante

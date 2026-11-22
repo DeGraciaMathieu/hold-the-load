@@ -36,3 +36,8 @@ test('un incident n’est actif que pendant sa fenêtre', () => {
   assert.equal(evActive(level, 'apiSlow', 6).length, 1);
   assert.equal(evActive(level, 'apiSlow', 16).length, 0);
 });
+
+test('deux cloisonnements de classes différentes sont pris en compte, un doublon est ignoré', () => {
+  const S = makeSim(level, layout([{ type: 'lb' }, null, null], [{ type: 'server' }, { type: 'bulkhead' }, { type: 'bulkhead', opts: { cls: 'reco' } }, { type: 'bulkhead' }, null]));
+  assert.deepEqual(S.bulkheads.map(b => [b.id, b.cls]), [['app1', 'pay'], ['app2', 'reco']]);
+});
