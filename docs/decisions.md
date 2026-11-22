@@ -160,14 +160,28 @@ Comportements qui semblent faux mais conservés, car le refactor ne doit pas cha
   `localStorage`.
 - **`user-scalable=no`** dans le viewport (accessibilité), conservé.
 
-## Questions ouvertes
+## Décisions prises après le refactor
 
-Décisions que le code ne tranche pas et qui n'ont pas été prises.
+Tranchées le 2026-11-22, à la mise en place de l'outillage Claude Code.
 
-- **Découper `stepSim` en étapes** (entrée et bots, serveurs, cache et base, files et
-  workers, autoscaling, état visuel) et lui faire rendre un nouvel état : utile avant
-  d'ajouter des briques ou des incidents, mais hors du périmètre d'un refactor à
-  comportement constant. L'instantané de référence permet de le faire sans risque.
-- Faut-il aligner les particules sur la simulation (voir plus haut), ou est-ce assumé comme
-  une illustration approximative ?
-- Faut-il versionner la sauvegarde avant de changer la forme de `ST` ?
+- **Instantané de référence après un changement de règle voulu.** `make-golden.js` ne sait
+  relire que le prototype : il ne peut pas capturer une règle nouvelle. Décision : lui
+  ajouter une option `--current` qui fait le `snapshot` depuis les modules de `src/`, avec
+  les mêmes `cases.js`. Déroulé : la règle change, `golden.test.js` échoue, on vérifie que
+  seuls les cas attendus bougent, on régénère dans le même commit et on le dit dans le
+  message. `golden.test.js` listera tous les cas qui diffèrent au lieu de s'arrêter au
+  premier. Le mode prototype reste pour l'historique. **Pas encore implémenté.**
+- **Découpage de `stepSim`** : reporté au premier ajout de brique ou d'incident. Il se fera
+  étape par étape (une fonction par bloc `// ----`, par exemple `stepServers(S, ctx)`), en
+  continuant de modifier `S`, avec `npm test` au vert après chaque extraction. On renonce à
+  une version qui rend un nouvel état.
+- **Particules** : assumées comme une illustration approximative. Seul l'écart qui contredit
+  le bilan sous les yeux du joueur (upload affiché réussi alors que le stockage objet est
+  tombé) est à corriger, à la prochaine retouche des particules. Elles lisent le `tick`,
+  sans jamais recalculer la simulation.
+- **Version de la sauvegarde** : reportée au premier changement de forme qui l'exige.
+  Ajouter un champ de premier niveau à `ST` n'en demande pas (`Object.assign` garde la
+  valeur par défaut). Elle devient nécessaire pour renommer ou restructurer un champ,
+  changer un `id` de mission, ou ajouter un champ imbriqué (`Object.assign` est
+  superficiel). On ajoutera alors un champ `version` et une fonction `migrate(raw)` testée,
+  appelée au chargement dans `store.js`, en gardant la clé `tenir-la-charge-v2`.
