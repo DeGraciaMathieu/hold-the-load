@@ -10,7 +10,7 @@ import { ST, save } from '../state/store.js';
 import { CUR, RUN, sources, campLevel, newCamp, lay, sets, regionsOf, lbAlgosOf } from '../state/context.js';
 import { $, fmt } from './dom.js';
 import { COLORS, invalidate, setSelected } from './board.js';
-import { renderTop, renderGoals, renderTools, refresh } from './panels.js';
+import { renderTop, renderGoals, renderTools, renderBench, refresh } from './panels.js';
 
 // ---------- panneaux ----------
 // Messages empilés : les incidents rapprochés d'un run restent tous lisibles. Un message déjà affiché repart à zéro au lieu d'être doublé.
@@ -45,7 +45,7 @@ function openLayer(el, focusIdx) {
 // slot : case du plateau concernée, marquée sur le plateau tant que la feuille est ouverte
 export function openSheet(html, after, slot = null) {
   const sheet = $('sheet');
-  setSelected(slot); document.body.classList.add('inspecting');
+  setSelected(slot); document.body.classList.add('inspecting'); renderBench();
   // une feuille redessinée après un réglage garde le focus sur le même bouton
   const focusIdx = [...sheet.querySelectorAll('button')].indexOf(document.activeElement);
   sheet.innerHTML = html;
@@ -57,35 +57,43 @@ export function dismiss() { if (!$('modal').classList.contains('on')) closeAll()
 export function closeAll() {
   for (const el of [$('sheet'), $('modal')]) { el.classList.remove('on'); el.inert = true; }
   $('scrim').classList.remove('on');
-  document.body.classList.remove('inspecting'); setSelected(null);
+  document.body.classList.remove('inspecting'); setSelected(null); renderBench();
   returnFocus?.focus({ preventScroll: true }); returnFocus = null;
 }
 
-export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); invalidate(); }
+export function changed() { ST.lastRes && delete ST.lastRes[CUR.key]; save(); renderGoals(null); renderBench(); invalidate(); }
 
-const slotName = (row, i) => { const r = ROW_DEF.find(x => x.key === row); return r.label.charAt(0) + r.label.slice(1).toLowerCase() + ' · case ' + (i + 1); };
+export const slotName = (row, i) => { const r = ROW_DEF.find(x => x.key === row); return r.label.charAt(0) + r.label.slice(1).toLowerCase() + ' · case ' + (i + 1); };
+
+// Pourquoi une brique ne peut pas être posée : message long pour la feuille, mention courte pour le catalogue.
+const BLOCKS = { placed: { msg: 'Déjà en place.', tag: 'posé' }, noPrimary: { msg: 'Il faut d’abord une base primaire à copier.', tag: 'sans base' } };
+export function brickBlock(L, t) {
+  if (CATALOG[t].unique && hasType(L, t)) return BLOCKS.placed;
+  if (t === 'replica' && !hasType(L, 'db')) return BLOCKS.noPrimary;
+  return null;
+}
+export const brickPrice = t => (t === 'server' ? 'dès 25' : CATALOG[t].cost(defaultOpts(t))) + ' €';
+export function placeBrick(t, row, i) {
+  const lv = CUR.level, b = { type: t, opts: defaultOpts(t) };
+  const regs = regionsOf(lv); if (regs) b.region = regs[0];
+  if (t === 'lb' && !lbAlgosOf(lv).includes(b.opts.algo)) b.opts.algo = lbAlgosOf(lv)[0];
+  lay()[row][i] = b; changed(); closeAll();
+  if (CATALOG[t].opts || (regs && !GLOBAL.includes(t))) editSheet(row, i);
+}
 
 export function addSheet(row, i) {
-  const lv = CUR.level, L = lay(), r = ROW_DEF.find(x => x.key === row);
+  const lv = CUR.level, L = lay();
   const types = Object.keys(CATALOG).filter(t => CATALOG[t].row === row && lv.bricks.includes(t));
   let html = `<h3><span><small>Poser une brique</small>${slotName(row, i)}</span><button class="x" aria-label="Fermer">✕</button></h3>`;
-  const reasons = {};
   for (const t of types) {
-    if (CATALOG[t].unique && hasType(L, t)) reasons[t] = 'Déjà en place.';
-    if (t === 'replica' && !hasType(L, 'db')) reasons[t] = 'Il faut d’abord une base primaire à copier.';
     if (t === 'db' && hasType(L, 'db')) continue;
-    html += `<button class="opt" data-t="${t}" ${reasons[t] ? 'disabled' : ''}><span class="sw" style="background:${COLORS[t]}">${CATALOG[t].short}</span><span><b>${CATALOG[t].name}</b><p>${reasons[t] || CATALOG[t].desc}</p></span><span class="price">${t === 'server' ? 'dès 25' : CATALOG[t].cost(defaultOpts(t))} €</span></button>`;
+    const block = brickBlock(L, t);
+    html += `<button class="opt" data-t="${t}" ${block ? 'disabled' : ''}><span class="sw" style="background:${COLORS[t]}">${CATALOG[t].short}</span><span><b>${CATALOG[t].name}</b><p>${block ? block.msg : CATALOG[t].desc}</p></span><span class="price">${brickPrice(t)}</span></button>`;
   }
   if (!types.length) html += '<p class="desc">Rien à poser ici dans cette mission.</p>';
   openSheet(html, el => {
     el.querySelector('h3 .x').onclick = closeAll;
-    el.querySelectorAll('.opt').forEach(btn => btn.onclick = () => {
-      const t = btn.dataset.t; const b = { type: t, opts: defaultOpts(t) };
-      const regs = regionsOf(lv); if (regs) b.region = regs[0];
-      if (t === 'lb' && !lbAlgosOf(lv).includes(b.opts.algo)) b.opts.algo = lbAlgosOf(lv)[0];
-      L[row][i] = b; changed(); closeAll();
-      if (CATALOG[t].opts || (regs && !GLOBAL.includes(t))) editSheet(row, i);
-    });
+    el.querySelectorAll('.opt').forEach(btn => btn.onclick = () => placeBrick(btn.dataset.t, row, i));
   }, { row, i });
 }
 

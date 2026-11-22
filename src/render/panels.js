@@ -1,17 +1,18 @@
 import { MAX_STARS } from '../config.js';
 import { LEVELS } from '../content/levels.js';
 import { CARDS } from '../content/texts.js';
+import { ROW_DEF, CATALOG } from '../content/catalog.js';
 import { layoutCost, emptyLayout, cloneLayout, hasType } from '../rules/layout.js';
 import { goalsMet, missionUnlocked } from '../rules/goals.js';
 import { campRevenue } from '../rules/campaign.js';
 import { useCard } from '../rules/sim/cards.js';
 import { ST, save } from '../state/store.js';
 import { CUR, RUN, buildCtx, lay, sets } from '../state/context.js';
-import { $, fmt } from './dom.js';
+import { $, fmt, DESK } from './dom.js';
 import { layout } from './geometry.js';
 import { clearParticles } from './particles.js';
-import { invalidate } from './board.js';
-import { toast, openSheet, closeAll, changed, settingsSheet, blockedByRun } from './dialogs.js';
+import { invalidate, setSelected, selectedSlot, setPick, picked } from './board.js';
+import { toast, openSheet, closeAll, changed, settingsSheet, blockedByRun, brickBlock, brickPrice, placeBrick, slotName } from './dialogs.js';
 
 // ---------- rendu de l'écran ----------
 export function renderTop() {
@@ -90,13 +91,47 @@ export function renderTools() {
     } });
   };
 }
+// Catalogue desktop : les briques de la mission par rangée. Une case vide choisie d'abord met sa rangée en avant.
+export function renderBench() {
+  const L = lay(), lv = CUR.level, pick = picked(), sel = selectedSlot();
+  const focusRow = sel && !L[sel.row][sel.i] ? sel.row : null;
+  let html = '<div class="k">Briques</div>';
+  for (const r of ROW_DEF) {
+    const types = Object.keys(CATALOG).filter(t => CATALOG[t].row === r.key && lv.bricks.includes(t));
+    if (!types.length) continue;
+    html += `<div class="bgrp${focusRow && focusRow !== r.key ? ' back' : ''}"><div class="lab">${r.label}</div>`;
+    for (const t of types) {
+      const block = brickBlock(L, t);
+      html += `<button class="bitem${t === pick ? ' on' : ''}" data-t="${t}" ${block ? `disabled title="${block.msg}"` : ''}><span class="bsw" style="background:var(--brick-${t})"></span><span class="bname">${CATALOG[t].name}</span><span class="bprice">${block ? block.tag : brickPrice(t)}</span></button>`;
+    }
+    html += '</div>';
+  }
+  $('bench').innerHTML = html;
+  $('bench').querySelectorAll('[data-t]').forEach(b => (b.onclick = () => {
+    if (blockedByRun()) return;
+    const t = b.dataset.t, slot = selectedSlot();
+    if (slot && !lay()[slot.row][slot.i] && CATALOG[t].row === slot.row) { placeBrick(t, slot.row, slot.i); return; }
+    closeAll(); setPick(picked() === t ? null : t); renderBench();
+  }));
+  renderHint();
+}
+function renderHint() {
+  if (RUN) return;
+  if (!DESK.matches) { $('hint').textContent = 'Touche une case pour poser une brique, une brique pour la régler.'; return; }
+  const pick = picked(), sel = selectedSlot();
+  let msg = 'Choisis une brique à gauche, ou clique une case vide.';
+  if (pick) msg = `${CATALOG[pick].name} · ${brickPrice(pick)} : clique une case allumée. Échap pour annuler.`;
+  else if (sel && !lay()[sel.row][sel.i]) msg = `${slotName(sel.row, sel.i)} : choisis une brique à gauche.`;
+  $('hint').textContent = msg;
+}
+export function focusSlot(slot) { closeAll(); setSelected(slot); renderBench(); }
+export function clearPick() { setPick(null); renderBench(); }
 export function refresh() {
-  buildCtx(); renderTop();
+  buildCtx(); renderTop(); setPick(null);
   $('title').textContent = CUR.level.title;
   $('crumb').textContent = CUR.kind === 'mission' ? (ST.level + 1) + ' / ' + LEVELS.length : CUR.kind === 'camp' ? 'Croissance' : 'Défi';
   $('story').textContent = CUR.level.story;
-  renderGoals(ST.lastRes && ST.lastRes[CUR.key]); renderTools();
-  $('hint').textContent = 'Touche une case pour poser une brique, une brique pour la régler.';
+  renderGoals(ST.lastRes && ST.lastRes[CUR.key]); renderTools(); renderBench();
   clearParticles();
   layout(); invalidate();
 }
