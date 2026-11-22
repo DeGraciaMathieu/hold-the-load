@@ -1,12 +1,12 @@
 # Tenir la charge : solutions des missions
 
-Mis à jour le 22 novembre 2026.
+Mis à jour le 22 novembre 2026, avec la mission 16 « Chacun son couloir » et la brique Cloisonnement.
 
 ## Comment lire ce document
 
 Chaque mission donne l'infra trois étoiles la moins chère trouvée, puis des alternatives qui tiennent aussi les trois objectifs. Toutes ont été rejouées avec le moteur de simulation du jeu (`runAll`), donc les chiffres sont ceux que le jeu affichera.
 
-- **Méthode** : toutes les combinaisons de briques, d'options, de réglages et de moments pour jouer les cartes qui tiennent dans le budget, simulées de la moins chère à la plus chère. Les briques et réglages sans effet sur une mission sont écartés (par exemple le pare-feu sans attaque, ou le disjoncteur sans paiements). La recherche est complète pour 16 missions. Pour les missions 10, 16 et 17, elle s'est arrêtée plus tôt : leur tableau le précise.
+- **Méthode** : toutes les combinaisons de briques, d'options, de réglages et de moments pour jouer les cartes qui tiennent dans le budget, simulées de la moins chère à la plus chère. Les briques et réglages sans effet sur une mission sont écartés (par exemple le pare-feu sans attaque, ou le disjoncteur sans paiements). La recherche est complète pour 17 missions. Pour les missions 10, 17 et 18, elle s'est arrêtée plus tôt : leur tableau le précise.
 - **Coût** : coût mensuel affiché à la fin de la partie (autoscaling compris).
 - **Ordre des briques** : sans importance dans une rangée, sauf quand un serveur tombe. C'est alors toujours le premier serveur de la rangée Application qui s'éteint.
 - **Cartes** : le moment indiqué est la seconde de la partie où il faut la jouer.
@@ -41,25 +41,26 @@ Les sept premières missions ont très peu de marge : quatre d'entre elles ne pa
 
 Pour la mission 10, la recherche s'est arrêtée après 150 000 parties sur 386 000 infras possibles. Une solution un peu moins chère reste possible.
 
-## Missions 14 à 19
+## Missions 14 à 20
 
-Les deux missions à infra imposée (18 et 19) se gagnent en retirant presque tout : un seul gros serveur suffit dans les deux cas.
+Les deux missions à infra imposée (19 et 20) se gagnent en retirant presque tout : un seul gros serveur suffit dans les deux cas. Le cloisonnement, disponible à partir de la mission 16, ne sert à rien aux missions 17 à 20 : elles n'ont ni paiements ni recos, leurs solutions ne changent pas.
 
 | Mission | Infra la moins chère | Coût | Dispo · p95 | Ce qui compte | Alternatives |
 | --- | --- | --- | --- | --- | --- |
 | 14 · Trop de monde à la porte | LB moins chargé, CDN, 2 gros + 1 moyen, Redis durée moyenne, pooler, base | 405 € / 430 | 100 % · 155 ms | Le pooler : sans lui, 97,9 %. | 2 gros + 2 petits : 415 €. Sans CDN : 2 gros + 2 moyens, Redis durée longue, 415 €. LB tourniquet, 3 gros : 420 €, 149 ms. |
 | 15 · Les recommandations | LB moins chargé, 1 gros + 1 moyen, Redis durée courte, base, **délestage activé** | 270 € / 275 | 100 % · 144 ms · 73 % de recos | Le délestage : sans lui, 94,4 %. La carte Dégrader n'est pas nécessaire. | Redis durée longue au même prix : 133 ms. |
-| 18 · Dégraisser la facture | CDN, 1 gros serveur, base | 205 € / 230 | 100 % · 145 ms | Tout retirer de l'infra héritée sauf la base et un gros serveur, puis ajouter le CDN. | Sans CDN : 1 gros + Redis durée courte, 210 €. LB moins chargé, 1 gros + 1 petit : 220 €. LB, 3 moyens : 230 €. |
-| 19 · La migration à chaud | 1 gros serveur sans LB, ancienne base + 1 réplique | 265 € / 300 | 99,9 % · 168 ms | Retirer le LB et les 3 serveurs moyens. Jouer Promouvoir **entre 12,5 et 14,5 s**. À 12 s ou à 16 s : 96,5 %. Sans carte : 95,9 %. | Avec Redis : 300 €, 134 à 142 ms. Avec un LB : 285 €. |
+| 16 · Chacun son couloir | LB moins chargé, 1 gros + 1 petit, **cloisonnement Paiements**, Redis durée courte, base | 300 € / 305 | 98 % · 162 ms | L'API à 750 ms n'ouvre pas le disjoncteur. Le cloisonnement garde les paiements lents dans leur couloir : il sature, le reste du site tient. Un serveur moyen à sa place, pour 295 € : 91,7 %. | 3 moyens + cloisonnement : 310 €. Sans cloisonnement, il faut 2 gros (315 €) : deux étoiles seulement, le budget saute. |
+| 19 · Dégraisser la facture | CDN, 1 gros serveur, base | 205 € / 230 | 100 % · 145 ms | Tout retirer de l'infra héritée sauf la base et un gros serveur, puis ajouter le CDN. | Sans CDN : 1 gros + Redis durée courte, 210 €. LB moins chargé, 1 gros + 1 petit : 220 €. LB, 3 moyens : 230 €. |
+| 20 · La migration à chaud | 1 gros serveur sans LB, ancienne base + 1 réplique | 265 € / 300 | 99,9 % · 168 ms | Retirer le LB et les 3 serveurs moyens. Jouer Promouvoir **entre 12,5 et 14,5 s**. À 12 s ou à 16 s : 96,5 %. Sans carte : 95,9 %. | Avec Redis : 300 €, 134 à 142 ms. Avec un LB : 285 €. |
 
 ### Missions à régions
 
-Pour les missions 16 et 17, chaque brique se place dans une région. La recherche a donc porté sur ce qui compte pour les régions : serveurs, Redis (durée longue), file, base et répliques. Elle s'est arrêtée 40 € au-dessus de la première solution.
+Pour les missions 17 et 18, chaque brique se place dans une région. La recherche a donc porté sur ce qui compte pour les régions : serveurs, Redis (durée longue), file, base et répliques. Elle s'est arrêtée 40 € au-dessus de la première solution.
 
 | Mission | Infra la moins chère | Coût | Dispo · p95 | Ce qui compte | Alternatives |
 | --- | --- | --- | --- | --- | --- |
-| 16 · Le monde entier | LB moins chargé, CDN. Paris : 1 petit + 1 moyen, base. New York : 1 moyen + 1 gros, Redis durée longue | 365 € / 420 | 100 % · 158 ms | Rien à Tokyo : le CDN sert le statique partout et les 25 % d'utilisateurs asiatiques passent sous les 160 ms en p95. | Tout à New York (1 petit + 2 gros, Redis, base) : 370 €, 99,7 %. 3 moyens + 1 gros répartis Paris / New York : 380 €. |
-| 17 · Panne de région | LB moins chargé. Paris : 1 petit + 1 gros, Redis durée longue, réplique. New York : **base primaire seule** | 315 € / 390 | 99,8 % · 187 ms | Mettre la primaire là où il n'y a rien d'autre : la panne ne fait tomber qu'elle. Jouer Promouvoir **juste après la panne, à 10 s**. Sans la carte, la bascule automatique arrive 5 s trop tard : 96,9 %. | 3 moyens à Paris : 325 €. 1 moyen + 1 gros à Paris : 330 €, 173 ms. |
+| 17 · Le monde entier | LB moins chargé, CDN. Paris : 1 petit + 1 moyen, base. New York : 1 moyen + 1 gros, Redis durée longue | 365 € / 420 | 100 % · 158 ms | Rien à Tokyo : le CDN sert le statique partout et les 25 % d'utilisateurs asiatiques passent sous les 160 ms en p95. | Tout à New York (1 petit + 2 gros, Redis, base) : 370 €, 99,7 %. 3 moyens + 1 gros répartis Paris / New York : 380 €. |
+| 18 · Panne de région | LB moins chargé. Paris : 1 petit + 1 gros, Redis durée longue, réplique. New York : **base primaire seule** | 315 € / 390 | 99,8 % · 187 ms | Mettre la primaire là où il n'y a rien d'autre : la panne ne fait tomber qu'elle. Jouer Promouvoir **juste après la panne, à 10 s**. Sans la carte, la bascule automatique arrive 5 s trop tard : 96,9 %. | 3 moyens à Paris : 325 €. 1 moyen + 1 gros à Paris : 330 €, 173 ms. |
 
 ## Défi du jour et Croissance
 
@@ -68,10 +69,11 @@ Ces deux modes n'ont pas de solution fixe : leurs niveaux sont générés. Le D�
 - **Défi du jour** : il n'y a pas de budget, le record est l'infra la moins chère qui tient 99 % de dispo et la latence demandée. Les incidents sont tirés parmi ceux des missions (pic, serveur qui tombe, cache vidé, rush d'écritures, API lente, attaque, panne de région), donc les parades ci-dessus s'appliquent telles quelles.
 - **Croissance** : le revenu d'un tour vaut 120 € + 0,2 € par req/s. Il tombe à zéro sous 95 % de dispo et n'est plein qu'à 99 %. Une latence au-dessus de l'objectif retire 30 % du revenu. Avec 300 € au départ, il vaut mieux ajouter des briques un tour avant d'en avoir besoin que rater un tour.
 
-Ce que les 19 missions montrent et qui vaut aussi ici :
+Ce que les 20 missions montrent et qui vaut aussi ici :
 
 - Avec des serveurs de tailles différentes, prendre le LB « moins chargé ».
 - Sans objectif de fraîcheur, la durée de vie longue du cache donne la meilleure latence au même prix.
 - Le CDN est la brique la plus rentable dès qu'il y a du statique.
 - Le serveur qui tombe est toujours le premier de la rangée : y mettre le plus petit.
 - Paiements lents : disjoncteur et file. Erreurs de paiement passagères : 1 nouvel essai.
+- Une classe qui rame sans que le disjoncteur s'ouvre (paiements lents mais pas en panne) : un cloisonnement pour elle seule.
