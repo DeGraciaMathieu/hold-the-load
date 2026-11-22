@@ -23,12 +23,15 @@ export function makeSim(level, layout, settings) {
   const fixed = bricks.filter(b => b.type === 'server').map(b => ({
     id: b.id, brick: b, cap: SIZES[b.opts.size].cap, conns: SIZES[b.opts.size].conns, region: b.region, alive: true, readyAt: 0, kind: 'fixed',
   }));
+  // un cloisonnement par classe au plus : le premier posé l'emporte
+  const bulkheads = bricks.filter(b => b.type === 'bulkhead').filter((b, k, all) => all.findIndex(x => x.opts.cls === b.opts.cls) === k)
+    .map(b => ({ id: b.id, brick: b, cls: b.opts.cls, region: b.region }));
   const temps = []; // serveurs ajoutés par carte
   const group = auto ? { brick: auto, inst: [], hi: 0, lo: 0, hold: -1, instSec: 0 } : null;
   if (group) for (let k = 0; k < auto.opts.min; k++) group.inst.push({ readyAt: 0, alive: true, region: auto.region });
   const primary = dbBrick ? { brick: dbBrick, cap: dbBrick.opts.legacy ? LEGACY_CAP : PRIMARY_CAP, maxConn: dbBrick.opts.legacy ? LEGACY_MAX_CONN : PRIMARY_MAX_CONN, region: dbBrick.region, alive: true } : null;
   const S = {
-    level, layout, settings, bricks, lb, cdn, waf, cache, queue, pooler, breaker, objstore, group, replicas, workers, fixed, temps,
+    level, layout, settings, bricks, lb, cdn, waf, cache, queue, pooler, breaker, objstore, group, replicas, workers, fixed, temps, bulkheads,
     primary, wafMode: waf ? waf.opts.mode : null,
     t: 0, step: 0, steps: Math.round(level.duration / DT), done: false,
     fired: {}, crashT: null, crashK: 0, failoverAt: null, coldStart: cache ? -99 : null,

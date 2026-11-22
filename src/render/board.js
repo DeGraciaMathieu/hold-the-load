@@ -27,6 +27,10 @@ function icon(type, cx, cy, s) {
   } else if (type === 'worker') {
     ctx.beginPath(); ctx.arc(cx, cy, s * .2, 0, 7); ctx.stroke();
     for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; L(cx + Math.cos(a) * s * .3, cy + Math.sin(a) * s * .3, cx + Math.cos(a) * s * .45, cy + Math.sin(a) * s * .45); }
+  } else if (type === 'bulkhead') {
+    rr(cx - s * .5, cy - s * .32, s, s * .64, 3); ctx.stroke();
+    L(cx - s * .17, cy - s * .32, cx - s * .17, cy + s * .32); L(cx + s * .17, cy - s * .32, cx + s * .17, cy + s * .32);
+    rr(cx - s * .5 + 2, cy - s * .32 + 2, s * .33 - 3, s * .64 - 4, 2); ctx.fill();
   } else if (type === 'cache') {
     ctx.beginPath(); ctx.moveTo(cx + s * .1, cy - s * .5); ctx.lineTo(cx - s * .28, cy + s * .05); ctx.lineTo(cx + s * .02, cy + s * .05); ctx.lineTo(cx - s * .1, cy + s * .5); ctx.lineTo(cx + s * .3, cy - s * .08); ctx.lineTo(cx, cy - s * .08); ctx.closePath(); ctx.fill();
   } else if (type === 'queue') {
@@ -71,6 +75,12 @@ function liveNode(b, row, i) {
       const u = mine.length ? mine.reduce((a, x) => a + x.rho, 0) / mine.length : 0;
       return { load: u, text: (tk.autoReady || 0) + '/' + (tk.autoCount || 0) + ' inst.' };
     }
+    case 'bulkhead': {
+      if (dead) return { dead: true, text: 'HORS LIGNE' };
+      if (!S.lb) return { load: 0, text: 'sans LB', idle: true };
+      const p = tk.servers.find(x => x.id === id);
+      return { load: p ? p.rho : 0, text: pct(p ? p.rho : 0) };
+    }
     case 'worker': {
       if (dead) return { dead: true, text: 'HORS LIGNE' };
       const n = S.workers.filter(w => w.alive).length || 1;
@@ -109,6 +119,7 @@ function optSummary(b) {
     case 'lb': return { rr: 'Tourniq.', sticky: 'Sticky', least: 'Moins ch.' }[o.algo];
     case 'cache': return { court: 'court', moyen: 'moyen', long: 'long' }[o.ttl] + (o.antiRuee ? '+AR' : '');
     case 'waf': return o.mode;
+    case 'bulkhead': return o.cls === 'pay' ? 'Paiements' : 'Recos';
     case 'autoscale': return o.min + '→' + o.max + ' @' + o.seuil + '%';
     case 'db': return o.legacy ? 'ancienne' : o.sensible ? 'sensible→P' : '';
   }
@@ -130,7 +141,13 @@ function links() {
   srv.forEach(s => { svc.forEach(c => out.push([s, c, .14])); if (queue) out.push([s, queue, .14]); data.forEach(d => out.push([s, d, .1])); if (obj) out.push([s, obj, .1]); if (brk) out.push([s, brk, .14]); });
   if (queue) wrk.forEach(w => out.push([queue, w, .35]));
   if (data[0]) wrk.forEach(w => out.push([w, data[0], .25]));
-  if (CUR.level.mix && hasPay()) { const from = brk || (srv[0] ? { x: srv[0].x, y: srv[0].y } : null); if (from) out.push([from, G.api, brk ? .45 : .2]); }
+  // cloisonnements : alimentés par le LB ; celui des recos lit comme un serveur, celui des paiements mène à l'API
+  const walls = placed('bulkhead').map(x => ({ p: center(x.row, x.i), cls: { ...defaultOpts('bulkhead'), ...(x.b.opts || {}) }.cls }));
+  if (lb) walls.forEach(w => out.push([lb, w.p, .45]));
+  walls.filter(w => w.cls === 'reco').forEach(w => { svc.forEach(c => out.push([w.p, c, .14])); data.forEach(d => out.push([w.p, d, .1])); });
+  const payWall = walls.find(w => w.cls === 'pay');
+  if (payWall && brk) out.push([payWall.p, brk, .14]);
+  if (CUR.level.mix && hasPay()) { const from = brk || (payWall && payWall.p) || (srv[0] ? { x: srv[0].x, y: srv[0].y } : null); if (from) out.push([from, G.api, brk || payWall ? .45 : .2]); }
   return out;
 }
 

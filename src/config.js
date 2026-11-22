@@ -89,6 +89,10 @@ export const AUTO_DOWN_UTIL = 0.5; // utilisation sous laquelle on retire une in
 export const AUTO_DOWN_AFTER = 3; // s sous ce seuil avant de retirer une instance
 export const AUTO_DOWN_RESET = 1; // compteur conservé après un retrait (le suivant arrive 2 s plus tard)
 
+// ---- Cloisonnement : un serveur réservé à une classe de requêtes
+export const BULKHEAD_CAP = 400; // req/s (serveur moyen)
+export const BULKHEAD_CONNS = 30;
+
 // ---- Cartes
 export const ADD_SERVER_BOOT = 5; // s
 export const ADD_SERVER_COST = 40; // €

@@ -21,6 +21,7 @@ export const REASONS = {
   noServer: 'Aucun serveur pour répondre',
   noLb: 'Sans load balancer, un seul serveur reçoit tout le trafic',
   serverSat: 'Serveurs saturés',
+  bulkheadSat: 'Cloisonnement saturé',
   crash: 'Le serveur tombé n’avait pas de relève',
   session: 'Sessions perdues : l’utilisateur arrive sur un serveur qui ne le connaît pas',
   noDb: 'Aucune base de données',

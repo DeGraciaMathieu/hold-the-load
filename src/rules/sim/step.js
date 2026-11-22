@@ -3,7 +3,7 @@ import {
   STATIC_COST, UPLOAD_COST, SIGNED_UPLOAD_COST, PAY_WAIT_DIVISOR, STICKY_CAPACITY, API_DEFAULT_LAT,
   API_BAD_LAT, API_BAD_ERR, BREAKER_OPEN_AFTER, BREAKER_CLOSE_AFTER, TIMEOUT_SHORT, TIMEOUT_LONG,
   CACHE_WARMUP, STAMPEDE_LOAD, WAF_STRICT_BLOCKED, WAF_STRICT_BOTS_PASS, WAF_SOFT_BOTS_PASS, SESSION_LOSS_WINDOW,
-  SHED_THRESHOLD, REPLICA_CAP, POOLER_MAX_CONN, FAILOVER_DELAY, LAG_MIN, LAG_SLOPE,
+  SHED_THRESHOLD, BULKHEAD_CAP, BULKHEAD_CONNS, REPLICA_CAP, POOLER_MAX_CONN, FAILOVER_DELAY, LAG_MIN, LAG_SLOPE,
   LAG_REPLICA_THRESHOLD, LAG_WRITE_DIVISOR, STALE_MAX, STALE_LAG_DIVISOR, WORKER_RATE, WORKER_CONNS,
   AUTO_INSTANCE_CAP, AUTO_BOOT, AUTO_UP_AFTER, AUTO_DOWN_UTIL, AUTO_DOWN_AFTER, AUTO_DOWN_RESET,
 } from '../../config.js';
@@ -161,6 +161,10 @@ function stepServers(S, X) {
     if (sticky && S.crashT != null && t - S.crashT < SESSION_LOSS_WINDOW && S.crashK > 0) sessFrac = 1 / S.crashK;
   }
   sessFrac *= L.logged || 0;
+  // cloisonnements qui reçoivent : vivants et derrière un LB. Leur classe quitte les serveurs partagés.
+  const bulkheads = S.lb ? S.bulkheads.filter(b => b.brick.alive) : [];
+  const walled = new Set(bulkheads.map(b => b.cls));
+  const sharedVol = c => (c === 'static' ? statIn : walled.has(c) ? 0 : att[c]);
   // flux vers le data tier
   const D = { direct: [], jobs: { write: 0, upload: 0, pay: 0 }, dbReads: [], }; // dbReads: [ {c, vol, srv, u, fresh} ]
   const serverRows = [];
@@ -169,7 +173,7 @@ function stepServers(S, X) {
     const g = route[u];
     if (!g) {
       // personne pour répondre
-      CLASSES.forEach(c => { const v = (c === 'static' ? statIn : att[c]) * regShare[u]; failA(c, v, S.fixed.length === 0 && !(S.group) ? 'noServer' : 'crash'); });
+      CLASSES.forEach(c => { const v = sharedVol(c) * regShare[u]; failA(c, v, S.fixed.length === 0 && !(S.group) ? 'noServer' : 'crash'); });
       continue;
     }
   }
@@ -178,7 +182,7 @@ function stepServers(S, X) {
     const share = Object.values(P.users).reduce((a, b) => a + b, 0);
     if (share <= 0 && !(botsPass > 0)) { P.servers.forEach(s => tk.servers.push({ id: s.id, rho: 0, receiving: false })); continue; }
     const botShare = Object.keys(pools).length ? 1 / Object.keys(pools).length : 1;
-    const vol = {}; CLASSES.forEach(c => (vol[c] = (c === 'static' ? statIn : att[c]) * share));
+    const vol = {}; CLASSES.forEach(c => (vol[c] = sharedVol(c) * share));
     const botV = botsPass * botShare;
     let W = 0; CLASSES.forEach(c => (W += vol[c] * COST[c])); W += botV;
     const capOf = s => s.cap * (sticky ? STICKY_CAPACITY : 1);
@@ -222,13 +226,44 @@ function stepServers(S, X) {
       if (bv > 0) D.dbReads.push({ c: 'bot', v: bv, g, u: null, base: 0, bot: true });
     });
   }
-  Object.assign(X, { recv, sessFrac, D, serverRows });
+  for (const b of bulkheads) stepBulkhead(S, X, b, { userRegions, regShare, sessFrac, serverRows });
+  Object.assign(X, { recv, sessFrac, D, serverRows, bulkheads });
+}
+
+// Un cloisonnement reçoit sa classe de toutes les régions. Saturé, il ne fait échouer qu'elle.
+function stepBulkhead(S, X, b, { userRegions, regShare, sessFrac, serverRows }) {
+  const st = S.settings;
+  const { COST, r, att, tk, A, failA } = X;
+  const c = b.cls;
+  let v = att[c];
+  let W = v * COST[c];
+  // délestage, comme sur les serveurs partagés
+  if (c === 'reco' && st.shed && W / BULKHEAD_CAP > SHED_THRESHOLD) {
+    const shed = Math.min(v, (W - SHED_THRESHOLD * BULKHEAD_CAP) / COST.reco);
+    v -= shed; W -= shed * COST.reco;
+    A.reco.shed = (A.reco.shed || 0) + shed;
+    A.reco.vol -= shed;
+  }
+  const rho = W / BULKHEAD_CAP;
+  const served = rho > 1 ? (r > 0 ? Math.max(0, 2 / rho - 1) : 1 / rho) : 1;
+  const lat = srvLat(rho) + LB_LAT;
+  tk.servers.push({ id: b.id, rho, receiving: v > 0, kind: 'bulkhead' });
+  for (const u of userRegions) {
+    const vu = v * regShare[u];
+    if (vu <= 0) continue;
+    failA(c, vu * (1 - served), 'bulkheadSat');
+    let sv = vu * served;
+    const sess = sv * sessFrac;
+    failA(c, sess, 'session'); sv -= sess;
+    serverRows.push({ c, v: sv, g: b.region, u, base: BASE_LAT + DIST[u][b.region] + lat });
+  }
 }
 
 // ---- connexions
 function stepConnections(S, X) {
-  const { recv, tk } = X;
+  const { recv, tk, bulkheads } = X;
   let conns = recv.reduce((a, s) => a + s.conns, 0) + S.workers.filter(w => w.alive).length * WORKER_CONNS;
+  conns += bulkheads.length * BULKHEAD_CONNS;
   if (S.pooler && S.pooler.alive) conns = Math.min(conns, POOLER_MAX_CONN);
   const prim = S.primary && S.primary.alive ? S.primary : null;
   const maxConn = prim ? prim.maxConn : 0;
