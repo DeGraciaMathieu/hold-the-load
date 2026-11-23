@@ -1,9 +1,10 @@
-import { DT, SIZES, API_BAD_LAT, API_BAD_ERR, CACHE_WARMUP, WORKER_RATE, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX } from '../config.js';
+import { DT, API_BAD_LAT, API_BAD_ERR, CACHE_WARMUP, WORKER_RATE, QUEUE_GAUGE_MAX, POOLER_GAUGE_MAX } from '../config.js';
 import { ROW_DEF, CATALOG, GLOBAL } from '../content/catalog.js';
 import { REGION_SHORT } from '../content/texts.js';
 import { defaultOpts, brickCost } from '../rules/layout.js';
 import { CUR, RUN, lay, regionsOf, mixNow, hasPay } from '../state/context.js';
 import { fmt, DESK } from './dom.js';
+import { tr, t } from './i18n.js';
 import { ctx, W, H, G, FONT, center, placed, rr, tempSlots } from './geometry.js';
 import { particles, bursts } from './particles.js';
 import { C, BRICK, REGION, CT } from './theme.js';
@@ -62,52 +63,52 @@ function liveNode(b, row, i) {
   switch (b.type) {
     case 'server': {
       const f = S.fixed.find(x => x.id === id);
-      if (!f || !f.alive) return { dead: true, text: 'HORS SERVICE' };
-      if (S.t < f.readyAt) return { warm: true, text: 'démarre…', load: 0 };
+      if (!f || !f.alive) return { dead: true, text: t('bDown') };
+      if (S.t < f.readyAt) return { warm: true, text: t('bBooting'), load: 0 };
       const s = tk.servers.find(x => x.id === id);
-      if (!s || !s.receiving) return { load: 0, text: 'aucun trafic', idle: true };
+      if (!s || !s.receiving) return { load: 0, text: t('bNoTraffic'), idle: true };
       return { load: s.rho, text: pct(s.rho) };
     }
     case 'autoscale': {
-      if (dead) return { dead: true, text: 'HORS LIGNE' };
-      if (!S.lb) return { load: 0, text: 'sans LB', idle: true };
+      if (dead) return { dead: true, text: t('bOffline') };
+      if (!S.lb) return { load: 0, text: t('bNoLb'), idle: true };
       const mine = tk.servers.filter(x => x.kind === 'auto');
       const u = mine.length ? mine.reduce((a, x) => a + x.rho, 0) / mine.length : 0;
       return { load: u, text: (tk.autoReady || 0) + '/' + (tk.autoCount || 0) + ' inst.' };
     }
     case 'bulkhead': {
-      if (dead) return { dead: true, text: 'HORS LIGNE' };
-      if (!S.lb) return { load: 0, text: 'sans LB', idle: true };
+      if (dead) return { dead: true, text: t('bOffline') };
+      if (!S.lb) return { load: 0, text: t('bNoLb'), idle: true };
       const p = tk.servers.find(x => x.id === id);
       return { load: p ? p.rho : 0, text: pct(p ? p.rho : 0) };
     }
     case 'worker': {
-      if (dead) return { dead: true, text: 'HORS LIGNE' };
+      if (dead) return { dead: true, text: t('bOffline') };
       const n = S.workers.filter(w => w.alive).length || 1;
       const d = (tk.drained.write + tk.drained.upload + tk.drained.pay) / DT / n;
       return { load: d / WORKER_RATE, text: Math.round(d) + ' t/s' };
     }
     case 'cache': {
-      if (dead) return { dead: true, text: 'HORS LIGNE' };
+      if (dead) return { dead: true, text: t('bOffline') };
       const cold = S.coldStart != null && S.t - S.coldStart < CACHE_WARMUP;
-      return { load: tk.hit, text: (cold ? 'froid ' : 'hit ') + pct(tk.hit), noBar: false, good: true, warnTxt: cold };
+      return { load: tk.hit, text: (cold ? t('bCold') : 'hit') + ' ' + pct(tk.hit), noBar: false, good: true, warnTxt: cold };
     }
     case 'queue': {
-      if (dead) return { dead: true, text: 'PERDUE' };
+      if (dead) return { dead: true, text: t('bLost') };
       const n = tk.backlog.write + tk.backlog.upload + tk.backlog.pay;
-      return { load: Math.min(1, n / QUEUE_GAUGE_MAX), text: fmt(n) + ' en file' };
+      return { load: Math.min(1, n / QUEUE_GAUGE_MAX), text: fmt(n) + ' ' + t('bQueued') };
     }
-    case 'pooler': return dead ? { dead: true, text: 'HORS LIGNE' } : { load: Math.min(1, tk.conns / (tk.maxConn || POOLER_GAUGE_MAX)), text: tk.conns + '/' + (tk.maxConn || 0) + ' cx' };
-    case 'breaker': return dead ? { dead: true, text: 'HORS LIGNE' } : { load: 0, noBar: true, text: tk.brkOpen ? 'OUVERT' : 'fermé', alarm: tk.brkOpen };
+    case 'pooler': return dead ? { dead: true, text: t('bOffline') } : { load: Math.min(1, tk.conns / (tk.maxConn || POOLER_GAUGE_MAX)), text: tk.conns + '/' + (tk.maxConn || 0) + ' cx' };
+    case 'breaker': return dead ? { dead: true, text: t('bOffline') } : { load: 0, noBar: true, text: t(tk.brkOpen ? 'bOpen' : 'bClosed'), alarm: tk.brkOpen };
     case 'db': case 'replica': {
       const isPrim = tk.primaryId === id;
-      if (dead || tk.nodeRho[id] == null) return { dead: true, text: 'HORS LIGNE' };
+      if (dead || tk.nodeRho[id] == null) return { dead: true, text: t('bOffline') };
       return { load: tk.nodeRho[id], text: (isPrim && b.type === 'replica' ? 'PRIM. ' : '') + pct(tk.nodeRho[id]) };
     }
-    case 'objstore': return dead ? { dead: true, text: 'HORS LIGNE' } : { load: 0, noBar: true, text: fmt(tk.T * (mixNow(tk.t).upload || 0)) + ' up/s' };
+    case 'objstore': return dead ? { dead: true, text: t('bOffline') } : { load: 0, noBar: true, text: fmt(tk.T * (mixNow(tk.t).upload || 0)) + ' up/s' };
     case 'lb': return { load: 0, noBar: true, text: fmt(tk.T + tk.botsPass) + ' r/s' };
     case 'cdn': return { load: 0, noBar: true, text: fmt(tk.T * mixNow(tk.t).static) + ' r/s' };
-    case 'waf': return { load: 0, noBar: true, text: (S.wafMode === 'strict' ? 'strict' : 'souple') + (tk.bots ? ' −' + fmt(tk.bots - tk.botsPass) : ''), alarm: tk.bots > 0 };
+    case 'waf': return { load: 0, noBar: true, text: (S.wafMode === 'strict' ? 'strict' : t('bLenient')) + (tk.bots ? ' −' + fmt(tk.bots - tk.botsPass) : ''), alarm: tk.bots > 0 };
   }
   return null;
 }
@@ -115,13 +116,13 @@ function liveNode(b, row, i) {
 function optSummary(b) {
   const o = { ...defaultOpts(b.type), ...(b.opts || {}) };
   switch (b.type) {
-    case 'server': return SIZES[o.size].label;
-    case 'lb': return { rr: 'Tourniq.', sticky: 'Sticky', least: 'Moins ch.' }[o.algo];
-    case 'cache': return { court: 'court', moyen: 'moyen', long: 'long' }[o.ttl] + (o.antiRuee ? '+AR' : '');
-    case 'waf': return o.mode;
-    case 'bulkhead': return o.cls === 'pay' ? 'Paiements' : 'Recos';
+    case 'server': return t('bSizes')[o.size];
+    case 'lb': return t('bAlgos')[o.algo];
+    case 'cache': return t('bTtl')[o.ttl] + (o.antiRuee ? t('bStampede') : '');
+    case 'waf': return o.mode === 'strict' ? 'strict' : t('bLenient');
+    case 'bulkhead': return t('bClasses')[o.cls];
     case 'autoscale': return o.min + '→' + o.max + ' @' + o.seuil + '%';
-    case 'db': return o.legacy ? 'ancienne' : o.sensible ? 'sensible→P' : '';
+    case 'db': return o.legacy ? t('bLegacyOpt') : o.sensible ? t('bSensitive') : '';
   }
   return '';
 }
@@ -255,20 +256,20 @@ export function draw() {
   for (const r of ROW_DEF) {
     const R = G.rows[r.key];
     ctx.fillStyle = C.muted; ctx.font = FONT(600, CT.m); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    if (G.gutter) { ctx.textBaseline = 'middle'; ctx.fillText(r.label, R.labelX, R.labelY); }
-    else ctx.fillText(r.label, R.slots[0].x, R.labelY + 8);
+    if (G.gutter) { ctx.textBaseline = 'middle'; ctx.fillText(tr(r.label), R.labelX, R.labelY); }
+    else ctx.fillText(tr(r.label), R.slots[0].x, R.labelY + 8);
     R.slots.forEach((s, i) => {
       const b = L[r.key][i];
       if (!b) {
         const tmp = r.key === 'app' && tempSlots().find(x => x.i === i);
         if (tmp) {
           const sv = RUN.tk && RUN.tk.servers.find(x => x.id === tmp.s.id);
-          const st = !tmp.s.alive ? { dead: true, text: 'HORS SERVICE' } : RUN.S.t < tmp.s.readyAt ? { text: 'démarre…', load: 0 } : { load: sv ? sv.rho : 0, text: sv ? Math.round(sv.rho * 100) + ' %' : '' };
-          drawBrick({ type: 'server' }, s, st, 'RENFORT', { temp: true });
+          const st = !tmp.s.alive ? { dead: true, text: t('bDown') } : RUN.S.t < tmp.s.readyAt ? { text: t('bBooting'), load: 0 } : { load: sv ? sv.rho : 0, text: sv ? Math.round(sv.rho * 100) + ' %' : '' };
+          drawBrick({ type: 'server' }, s, st, t('bBackup'), { temp: true });
           return;
         }
         // brique choisie dans le catalogue : seules les cases libres de sa rangée s'allument
-        if (pick && !RUN) { if (CATALOG[pick].row === r.key) drawTarget(s, CATALOG[pick].short); return; }
+        if (pick && !RUN) { if (CATALOG[pick].row === r.key) drawTarget(s, tr(CATALOG[pick].short)); return; }
         // case vide survolée : elle devient un bouton (fond carte, bord encre, ombre), le + passe à l'encre
         if (lifted(r.key, i)) {
           const y = s.y - LIFT;
@@ -284,10 +285,10 @@ export function draw() {
         return;
       }
       const st = liveNode(b, r.key, i);
-      let label = CATALOG[b.type].short;
+      let label = tr(CATALOG[b.type].short);
       if (b.type === 'server') label = 'SRV ' + letters[srvIdx++];
-      if (b.type === 'replica' && RUN && RUN.tk && RUN.tk.primaryId === r.key + i) label = 'PRIMAIRE';
-      if (b.type === 'db' && b.opts && b.opts.legacy) label = 'ANCIENNE';
+      if (b.type === 'replica' && RUN && RUN.tk && RUN.tk.primaryId === r.key + i) label = t('bPrimary');
+      if (b.type === 'db' && b.opts && b.opts.legacy) label = t('bLegacy');
       drawBrick(b, s, st, label, { sub: (optSummary(b) ? optSummary(b) + ' · ' : '') + brickCost(b) + '€', price: brickCost(b) + '€', region: regs && !GLOBAL.includes(b.type) ? (b.region || regs[0]) : null, lift: lifted(r.key, i) });
     });
   }

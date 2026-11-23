@@ -12,7 +12,7 @@ Trois modes, choisis par les onglets (`ST.mode`) : `missions` (19 missions à é
 
 | Concept | Où | Détail |
 | --- | --- | --- |
-| sauvegarde du joueur | `ST`, `save()`, `src/state/store.js` | `{ mode, level, layouts, settings, stars, camp, campBest, daily }`, plus `lastRes` ajouté par `endRun`. Clé `tenir-la-charge-v2`, fusion brute, sans version |
+| sauvegarde du joueur | `ST`, `save()`, `src/state/store.js` | `{ lang, mode, level, layouts, settings, stars, camp, campBest, daily }` (`lang` : `'en'` par défaut, ou `'fr'`), plus `lastRes` ajouté par `endRun`. Clé `tenir-la-charge-v2`, fusion brute, sans version |
 | contexte courant | `buildCtx()`, `CUR`, `src/state/context.js` | `CUR = { kind: 'mission' \| 'camp' \| 'daily', level, key, date? }`. Crée le plateau et les réglages de `key` s'ils manquent |
 | plateau et réglages courants | `lay()`, `sets()` | `ST.layouts[CUR.key]`, `ST.settings[CUR.key]` |
 | clé de sauvegarde | `CUR.key` | `lv.id` pour une mission, `'camp'`, `'daily-AAAA-MM-JJ'` |

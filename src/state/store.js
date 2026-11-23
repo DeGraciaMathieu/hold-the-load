@@ -10,7 +10,8 @@ export function migrateSave(st) {
   st.levelsV = LEVELS_V;
 }
 
-export const ST = { mode: 'missions', level: 0, layouts: {}, settings: {}, stars: {}, camp: null, campBest: 0, daily: {} };
+// lang : langue des textes affichés, l’anglais tant que le joueur n’a rien choisi.
+export const ST = { lang: 'en', mode: 'missions', level: 0, layouts: {}, settings: {}, stars: {}, camp: null, campBest: 0, daily: {} };
 try { Object.assign(ST, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 migrateSave(ST);
 export const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) {} };

@@ -28,7 +28,8 @@ auto_invoke: true
 | modale de résultat | `showResult(res)` | bilan, étoiles, Croissance, partage du défi |
 | messages | `toast(msg, action?)` | `TOAST_MS`, `TOAST_ACTION_MS`, `TOAST_MAX` |
 | garde pendant un run | `blockedByRun()` | refuse les gestes de construction pendant une simulation |
-| format | `$`, `fmt`, `render/dom.js` | `fmt` = nombre arrondi au format `fr-FR` |
+| format | `$`, `fmt`, `render/dom.js` | `fmt` = nombre arrondi au format de la langue (`en-US` ou `fr-FR`) |
+| langue | `tr`, `t`, `render/i18n.js` | `tr(x)` traduit un texte de contenu ou un message des règles, `t(clé, p)` un texte de `UI` (`content/ui.js`), dans `ST.lang`. `renderTexts()` (`panels.js`) redessine tous les textes ; `index.html` porte `data-i18n` / `data-i18n-label` |
 
 ## Conventions
 
@@ -46,7 +47,7 @@ auto_invoke: true
 2. Squelette fixe : `index.html`. Contenu dynamique : la fonction `render…` concernée dans `panels.js`, ou une feuille dans `dialogs.js`.
 3. Styles dans `css/style.css`, uniquement avec les variables.
 4. Geste fixe : écouteur dans `bindInput` (`input/handlers.js`), intention dans `loop/run.js`, branchement dans `main.js`.
-5. Si l'élément affiche un texte avec des chiffres de jeu, le calculer depuis `config.js` plutôt que l'écrire en dur.
+5. Aucun texte affiché en dur : une clé dans `UI` (`content/ui.js`) en anglais et en français, lue par `t()`. Si le texte contient des chiffres de jeu, les calculer depuis `config.js` plutôt que les écrire.
 6. Vérifier dans le navigateur (`npm run dev`), à la largeur d'un téléphone et sur grand écran, puis lancer `npm test`.
 
 ## Ajouter le dessin d'une brique

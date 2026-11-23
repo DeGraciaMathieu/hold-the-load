@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tenir la charge</title>
+<title>Hold the Load</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -11,10 +11,13 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Tenir la charge</h1>
-    <div class="tabs" id="tabs"><button class="tab" data-m="missions">Missions</button><button class="tab" data-m="camp">Croissance</button><button class="tab" data-m="daily">Défi</button></div>
+    <h1 data-i18n="appTitle">Hold the Load</h1>
+    <div class="heads">
+      <div class="tabs" id="tabs"><button class="tab" data-m="missions" data-i18n="tabMissions">Missions</button><button class="tab" data-m="camp" data-i18n="tabCamp">Growth</button><button class="tab" data-m="daily" data-i18n="tabDaily">Daily</button></div>
+      <div class="tabs" id="langs" data-i18n-label="langs" aria-label="Language"><button class="tab" data-l="en">EN</button><button class="tab" data-l="fr">FR</button></div>
+    </div>
   </header>
-  <aside class="bench" id="bench" aria-label="Briques"></aside>
+  <aside class="bench" id="bench" data-i18n-label="bricks" aria-label="Bricks"></aside>
   <div class="side">
   <div id="top"></div>
   <div class="card">
@@ -27,16 +30,16 @@
   <footer>
     <div class="cards" id="cards"></div>
     <div class="bar">
-      <div class="cost" id="costBox"><div class="k" id="costK">Coût mensuel</div><div class="v" id="cost">0 €</div></div>
+      <div class="cost" id="costBox"><div class="k" id="costK">Monthly cost</div><div class="v" id="cost">0 €</div></div>
       <button class="btn light small" id="speed" style="display:none">×2</button>
-      <button class="btn go" id="run">Lancer ▶</button>
+      <button class="btn go" id="run">Run ▶</button>
     </div>
   </footer>
   </div>
   <div class="stage">
     <canvas id="board"></canvas>
     <p class="hint" id="hint"></p>
-    <p class="hint keys">Clavier : L lancer · P passer · V vitesse · Échap fermer</p>
+    <p class="hint keys" data-i18n="keys">Keys: L run · P skip · V speed · Esc close</p>
   </div>
 </div>
 <div class="scrim" id="scrim"></div>

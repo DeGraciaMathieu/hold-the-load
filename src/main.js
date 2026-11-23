@@ -5,7 +5,7 @@ import { refresh, watchFooter, clearPick } from './render/panels.js';
 import { DESK } from './render/dom.js';
 import { loadTheme } from './render/theme.js';
 import { bindInput } from './input/handlers.js';
-import { clickBoard, hoverBoard, switchMode, toggleRun, toggleSpeed, launchKey, skipKey, relayout, frame } from './loop/run.js';
+import { clickBoard, hoverBoard, switchMode, switchLang, toggleRun, toggleSpeed, launchKey, skipKey, relayout, frame } from './loop/run.js';
 
 // Seules sources d'aléa et d'horloge du jeu : la graine d'une partie Croissance et la date du défi.
 const randomSeed = () => Math.floor(Math.random() * 1e9);
@@ -13,7 +13,7 @@ const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + St
 sources.randomSeed = randomSeed;
 sources.today = todayStr;
 
-bindInput({ board: clickBoard, hover: hoverBoard, keys: { l: launchKey, p: skipKey, v: toggleSpeed }, tab: switchMode, run: toggleRun, speed: toggleSpeed, scrim: dismiss, escape: () => { clearPick(); dismiss(); }, resize: relayout });
+bindInput({ board: clickBoard, hover: hoverBoard, keys: { l: launchKey, p: skipKey, v: toggleSpeed }, tab: switchMode, lang: switchLang, run: toggleRun, speed: toggleSpeed, scrim: dismiss, escape: () => { clearPick(); dismiss(); }, resize: relayout });
 // Passage desktop ↔ mobile : les tailles de texte du plateau changent avec la mise en page.
 DESK.addEventListener('change', () => { loadTheme(); clearPick(); relayout(); });
 loadTheme();

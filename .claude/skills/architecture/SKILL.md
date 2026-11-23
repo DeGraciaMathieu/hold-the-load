@@ -28,7 +28,8 @@ Un module n'importe que des couches situées à sa gauche. Exceptions existantes
 | `src/config.js` | toutes les constantes de réglage (simulation, latences, coûts, Croissance, affichage lié aux règles) | — |
 | `src/content/catalog.js` | `ROW_DEF`, `CATALOG`, `CLASSES`, `GLOBAL`, `OPT_DEFS`, `SET_DEFS` | `config` |
 | `src/content/levels.js` | les 19 missions `LEVELS`, fabriques `mixOf`, `wave` | — |
-| `src/content/texts.js` | `REGION_NAMES`, `REGION_SHORT`, `EVENT_NAMES`, `CARDS`, `REASONS` | — |
+| `src/content/texts.js` | `LANGS`, `REGION_NAMES`, `REGION_SHORT`, `EVENT_NAMES`, `CARDS`, `REASONS`, `MSGS`, `tr` | — |
+| `src/content/ui.js` | `UI` : textes de l'interface en anglais et en français | — |
 | `src/rules/latency.js` | `srvLat`, `dbLat` | `config` |
 | `src/rules/stats.js` | `p95`, `addReason` | — |
 | `src/rules/layout.js` | `defaultOpts`, `brickCost`, `layoutCost`, `emptyLayout`, `cloneLayout`, `hasType` | `content` |
@@ -42,7 +43,8 @@ Un module n'importe que des couches situées à sa gauche. Exceptions existantes
 | `src/rules/sim/result.js` | `resultOf`, `runAll` | `rules/*`, `sim/*` |
 | `src/state/store.js` | `ST`, `save` (localStorage) | — |
 | `src/state/context.js` | `sources`, `CUR`, `buildCtx`, `newCamp`, `campLevel`, `lay`, `sets`, `RUN`, `setRun`, accesseurs du niveau | `config`, `content`, `rules`, `store` |
-| `src/render/dom.js` | `$`, `fmt` | — |
+| `src/render/i18n.js` | `tr`, `t` : traduction dans `ST.lang` | `content`, `store` |
+| `src/render/dom.js` | `$`, `fmt` | `i18n` |
 | `src/render/theme.js` | `loadTheme` remplit `C`, `BRICK`, `REGION`, `CT` depuis les variables CSS | `content` |
 | `src/render/geometry.js` | canvas, `layout()`, `G`, `K`, `center`, `placed`, `serverPos`, `tempSlots` | `content`, `state` |
 | `src/render/board.js` | `draw`, `drawIfNeeded`, `invalidate`, `setHover`, `setSelected` | `geometry`, `theme`, `state`, `rules` |
@@ -62,7 +64,8 @@ Un module n'importe que des couches situées à sa gauche. Exceptions existantes
 | nouveau nombre de réglage | `src/config.js`, constante nommée et commentée avec son unité |
 | nouvelle brique, option, réglage d'appli | `src/content/catalog.js` (voir skill `contenu`) |
 | nouvelle mission | `src/content/levels.js` |
-| nouveau texte de jeu (incident, carte, cause d'échec) | `src/content/texts.js` |
+| nouveau texte de jeu (incident, carte, cause d'échec, message d'une règle) | `src/content/texts.js`, en anglais et en français |
+| nouveau texte d'interface | `src/content/ui.js`, en anglais et en français |
 | règle de calcul pure (coût, score, revenu…) | un module de `src/rules/`, existant ou nouveau, plus un test |
 | comportement du trafic pendant la partie | `src/rules/sim/step.js` (voir skill `simulation`) |
 | action en cours de partie | `src/rules/sim/cards.js` |

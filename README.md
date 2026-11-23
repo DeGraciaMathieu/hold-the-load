@@ -18,6 +18,8 @@ infrastructure encaisser le trafic, les pannes et les attaques. Ou s'effondrer.
 
 Chaque brique a son prix et ses limites. Le défi est de tenir sans sur-dimensionner.
 
+Le jeu est en anglais par défaut ; le bouton EN/FR en haut de l'écran passe en français, et le choix est gardé.
+
 ## Trois modes
 
 - **Missions** : 20 situations écrites à la main, du premier client à la migration à chaud,

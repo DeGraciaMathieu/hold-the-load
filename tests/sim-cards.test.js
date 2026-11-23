@@ -15,7 +15,7 @@ test('une carte jouée est consommée ; sans carte en main, rien ne se passe', (
   const S = makeSim(level({ addServer: 1 }), layout);
   assert.equal(useCard(S, 'addServer').ok, true);
   assert.equal(S.cards.addServer, 0);
-  assert.deepEqual(useCard(S, 'addServer'), { ok: false, msg: 'Plus de carte' });
+  assert.deepEqual(useCard(S, 'addServer'), { ok: false, msg: { k: 'noCard' } });
 });
 
 test('le serveur en renfort démarre en 5 s et coûte 40 € de plus', () => {
@@ -28,7 +28,7 @@ test('le serveur en renfort démarre en 5 s et coûte 40 € de plus', () => {
 
 test('relancer sans serveur tombé ne consomme pas la carte', () => {
   const S = makeSim(level({ restart: 1 }), layout);
-  assert.deepEqual(useCard(S, 'restart'), { ok: false, msg: 'Aucun serveur à relancer' });
+  assert.deepEqual(useCard(S, 'restart'), { ok: false, msg: { k: 'noDead' } });
   assert.equal(S.cards.restart, 1);
 });
 

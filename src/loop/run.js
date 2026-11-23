@@ -6,10 +6,11 @@ import { resultOf } from '../rules/sim/result.js';
 import { ST, save } from '../state/store.js';
 import { CUR, RUN, setRun, lay, sets } from '../state/context.js';
 import { $, DESK } from '../render/dom.js';
+import { tr, t } from '../render/i18n.js';
 import { G, layout } from '../render/geometry.js';
 import { drawIfNeeded, invalidate, setHover, setPick, picked } from '../render/board.js';
 import { particles, clearParticles, spawn, spawnJob, stepParticles } from '../render/particles.js';
-import { renderGoals, refresh, renderCards, liveGoals, renderBench, focusSlot } from '../render/panels.js';
+import { renderGoals, refresh, renderTexts, renderCards, liveGoals, renderBench, focusSlot } from '../render/panels.js';
 import { toast, addSheet, editSheet, placeBrick, showResult, blockedByRun, layerOpen, closeAll } from '../render/dialogs.js';
 import { C } from '../render/theme.js';
 
@@ -38,6 +39,8 @@ export function hoverBoard(x, y) {
   setHover(slot);
 }
 export function switchMode(m) { if (blockedByRun()) return; ST.mode = m; save(); refresh(); }
+// Changer de langue ne touche ni au plateau ni à la simulation : seulement les textes, donc permis pendant un run.
+export function switchLang(l) { ST.lang = l; save(); renderTexts(); relayout(); invalidate(); }
 export function toggleRun() {
   if (!RUN) { startRun(); return; }
   if (performance.now() - RUN.startedAt >= SKIP_GUARD_MS) RUN.skip = true;
@@ -56,8 +59,8 @@ function startRun() {
   stepSim(S); RUN.tk = S.ticks[S.ticks.length - 1];
   clearParticles();
   document.body.classList.add('running');
-  $('run').textContent = 'Passer ⏭'; $('run').classList.remove('go'); $('speed').style.display = ''; $('speed').textContent = '×' + SPEED_FAST;
-  $('hint').textContent = 'Points noirs : requêtes. ✕ rouge : perdue. Violet : bots.';
+  $('run').textContent = t('skip'); $('run').classList.remove('go'); $('speed').style.display = ''; $('speed').textContent = '×' + SPEED_FAST;
+  $('hint').textContent = t('runHint');
   renderCards();
   requestAnimationFrame(revealBoard);
 }
@@ -75,7 +78,7 @@ function endRun() {
   setRun(null); clearParticles(); invalidate();
   document.body.classList.remove('running');
   $('cards').classList.remove('on'); $('speed').style.display = 'none';
-  $('run').textContent = 'Lancer ▶'; $('run').classList.add('go');
+  $('run').textContent = t('run'); $('run').classList.add('go');
   renderBench();
   (ST.lastRes ||= {})[CUR.key] = { avail: res.avail, p95: res.p95, cost: res.cost, fresh: res.fresh, recos: res.recos, ok: res.ok };
   renderGoals(res);
@@ -92,7 +95,7 @@ export function frame(now) {
     else {
       RUN.acc += dt * RUN.speed;
       while (RUN.acc >= DT && !S.done) { RUN.acc -= DT; stepSim(S); RUN.tk = S.ticks[S.ticks.length - 1]; }
-      while (RUN.logN < S.log.length) toast(S.log[RUN.logN++].msg);
+      while (RUN.logN < S.log.length) toast(tr(S.log[RUN.logN++].msg));
       const tk = RUN.tk;
       RUN.spawnAcc += Math.min(70, 10 + (tk.T + tk.bots) / 30) * dt;
       while (RUN.spawnAcc >= 1) { RUN.spawnAcc--; const p = spawn(); if (p) particles.push({ ...p, seg: 0, prog: 0, x: p.pts[0].x, y: p.pts[0].y, alpha: 1, color: p.bot ? C.bot : C.ink }); }

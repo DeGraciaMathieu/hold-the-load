@@ -5,9 +5,9 @@ export const DT = 0.25; // pas de simulation (s)
 export const BASE_LAT = 20; // latence réseau minimale d'un client (ms)
 export const DIST = { eu: { eu: 0, us: 80, asia: 120 }, us: { eu: 80, us: 0, asia: 100 }, asia: { eu: 120, us: 100, asia: 0 } }; // ms entre régions
 export const SIZES = {
-  s: { cap: 200, cost: 25, conns: 15, label: 'Petit' },
-  m: { cap: 400, cost: 40, conns: 30, label: 'Moyen' },
-  l: { cap: 1000, cost: 85, conns: 70, label: 'Gros' },
+  s: { cap: 200, cost: 25, conns: 15 },
+  m: { cap: 400, cost: 40, conns: 30 },
+  l: { cap: 1000, cost: 85, conns: 70 },
 };
 export const TTL = { court: { hit: 0.6, stale: 0 }, moyen: { hit: 0.8, stale: 0.01 }, long: { hit: 0.93, stale: 0.08 } };
 

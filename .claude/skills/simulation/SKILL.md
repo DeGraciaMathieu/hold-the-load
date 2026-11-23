@@ -61,14 +61,14 @@ Modèle de flux à pas fixe : à chaque pas de `DT` = 0,25 s, un débit de requ�
 2. Ponctuel : ajouter une branche `else if (e.type === '…')` dans `fireEvents` (`step.js`). Pousser un message dans `S.log`, il s'affiche en toast.
 3. À fenêtre : le lire avec `evActive(L, '…', t)` dans `instantParams`.
 4. Mettre ses durées et ses intensités dans `src/config.js` (préfixe `GEN_` s'il est généré).
-5. Ajouter son libellé dans `EVENT_NAMES` (`texts.js`) s'il peut être tiré par `genLevel`, et l'ajouter à `evPool` dans `rules/procgen.js` avec sa condition.
+5. Ajouter son libellé `{ en, fr }` dans `EVENT_NAMES` (`texts.js`), et son message de chronologie dans `MSGS`, s'il peut être tiré par `genLevel`, et l'ajouter à `evPool` dans `rules/procgen.js` avec sa condition.
 6. L'utiliser dans une mission (`levels.js`), voir le skill `contenu`.
 7. Tester dans `tests/sim-step.test.js` : un niveau minimal avec l'incident, et l'effet observable (`avail`, `reasons`).
 
 ## Ajouter une carte
 
 1. Ajouter `name` et `desc` dans `CARDS` (`content/texts.js`).
-2. Ajouter une branche dans `useCard` (`rules/sim/cards.js`). Rendre `{ ok: false, msg }` sans consommer la carte quand elle est inutilisable.
+2. Ajouter une branche dans `useCard` (`rules/sim/cards.js`). Rendre `{ ok: false, msg }` sans consommer la carte quand elle est inutilisable. `msg` est une clé `{ k, p? }` de `MSGS` (`content/texts.js`), écrite en anglais et en français.
 3. Mettre ses constantes dans la section Cartes de `config.js`. Garder la `desc` et le `msg` cohérents avec ces valeurs.
 4. La distribuer : `cards: { nom: n }` dans une mission, et/ou dans le tirage de `genLevel`.
 5. Tester dans `tests/sim-cards.test.js`.

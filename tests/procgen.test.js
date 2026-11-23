@@ -24,7 +24,7 @@ test('le trafic grossit de 32 % par tour, arrondi à 50 req/s', () => {
 test('le défi du jour est le même pour tout le monde à une date donnée, avec toutes les briques', () => {
   const a = dailyLevel('2026-11-19'), b = dailyLevel('2026-11-19');
   assert.deepEqual(strip(a), strip(b));
-  assert.equal(a.title, 'Défi du 19/11');
+  assert.deepEqual(a.title, { k: 'dailyTitle', p: { d: '2026-11-19' } });
   assert.equal(a.bricks.length, 14);
   assert.equal(a.goals.budget, null);
 });

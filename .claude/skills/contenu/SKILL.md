@@ -22,8 +22,10 @@ Les données sont dans `src/content/` : ce ne sont ni des constantes de réglage
 | mélange et profil de trafic | `mixOf(o)`, `wave(a, b, p)` | `mix` : part par classe (objet ou `t => objet`) ; `profile` : `t => facteur` |
 | noms de régions | `REGION_NAMES`, `REGION_SHORT`, `texts.js` | `eu` Paris, `us` New York, `asia` Tokyo |
 | incidents (libellé généré) | `EVENT_NAMES` | utilisés par `genLevel` |
-| cartes | `CARDS` | `{ name, desc }` |
-| causes d'échec | `REASONS` | une phrase par clé passée à `addReason` |
+| cartes | `CARDS` | `{ name, desc }`, chacun `{ en, fr }` |
+| causes d'échec | `REASONS` | une phrase `{ en, fr }` par clé passée à `addReason` |
+| messages des règles | `MSGS` | `{ en, fr }` par clé, fonction de `p` si le message a des paramètres |
+| textes de l'interface | `UI`, `ui.js` | `{ en, fr }` par clé, lus par `t(clé, p)` (`render/i18n.js`) |
 
 ### Champs d'une mission
 
@@ -62,6 +64,9 @@ Les données sont dans `src/content/` : ce ne sont ni des constantes de réglage
 
 ## Textes
 
-- Français, tutoiement, apostrophe typographique `’` et espace avant `%` et `€` (« 30 % », « 40 € »).
+- **Deux langues** : chaque texte affiché est une paire `{ en, fr }` (une chaîne seule si elle est identique dans les deux langues, comme « CDN » ou « 5 s »). L'anglais est la langue par défaut. `tests/texts.test.js` échoue si une langue manque.
+- Les textes de l'interface (panneaux, feuilles, bilan, plateau, `index.html`) sont dans `UI` (`content/ui.js`) ; ceux des règles (réponses des cartes, chronologie, titres et récits générés) dans `MSGS` (`content/texts.js`). Les règles rendent `{ k, p }`, jamais une phrase : `tr(x, lang)` (`texts.js`) traduit, et le rendu passe par `tr` et `t` de `render/i18n.js`.
+- Français : tutoiement, apostrophe typographique `’` et espace avant `%` et `€` (« 30 % », « 40 € »). Anglais : même ton, apostrophe `’`, mêmes montants (« 40 € ») ; virgule des milliers (« 1,000 »), point décimal (« 0.8 s »).
+- Une valeur chiffrée se corrige dans les deux langues à la fois.
 - `desc` explique l'effet en termes de jeu, avec les chiffres utiles. `help` explique le compromis d'un choix.
 - Un texte qui cite un nombre est à mettre à jour en même temps que la constante (le hook Stop de synchro de doc le vérifie).
