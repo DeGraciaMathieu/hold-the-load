@@ -187,3 +187,11 @@ Tranchées le 2026-11-22, à la mise en place de l'outillage Claude Code.
   changer un `id` de mission, ou ajouter un champ imbriqué (`Object.assign` est
   superficiel). On ajoutera alors un champ `version` et une fonction `migrate(raw)` testée,
   appelée au chargement dans `store.js`, en gardant la clé `tenir-la-charge-v2`.
+- **Deux langues, anglais par défaut** (2026-11-23). Les textes de contenu sont des paires
+  `{ en, fr }` ; l'interface a son dictionnaire `UI` (`content/ui.js`). Les règles restent
+  sans langue : elles rendent des messages `{ k, p }` (clés de `MSGS`, `content/texts.js`),
+  y compris pour les titres et récits générés, et le rendu traduit avec `tr` / `t`
+  (`render/i18n.js`) selon `ST.lang` (champ de premier niveau, `'en'` par défaut, sans
+  migration). Le changement de langue est permis pendant un run : il ne touche que les
+  textes. L'instantané a été régénéré avec `--current` : remis en français, les textes du
+  moteur actuel redonnent l'ancien instantané à l'identique, aucun chiffre n'a bougé.

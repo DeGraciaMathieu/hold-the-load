@@ -44,7 +44,7 @@ Les imports ne descendent que dans cet ordre : `config` → `content` → `rules
 ### Nommage et style
 
 - Code compact dans l'esprit du prototype : identifiants courts en camelCase anglais (`stepSim`, `layoutCost`, `campOutcome`), clés de contenu courtes (`lb`, `db`, `objstore`).
-- **Commentaires, textes du jeu, tests et docs en français**, avec les accents et l'apostrophe typographique (`’`) dans les textes affichés.
+- **Commentaires, tests et docs en français.** Les **textes du jeu existent en anglais (par défaut) et en français** : paires `{ en, fr }` dans `content/` (`UI` dans `ui.js` pour l'interface, `MSGS` dans `texts.js` pour les messages des règles), jamais de phrase en dur dans `rules/`, `render/`, `loop/` ou `index.html`. Apostrophe typographique (`’`) dans les deux langues.
 - Un commentaire d'une ligne au-dessus d'une fonction exportée dit ce qu'elle calcule. Les sections se signalent par `// ---------- titre ----------`.
 - Les noms de tests sont des phrases en français qui décrivent un comportement (« relancer sans serveur tombé ne consomme pas la carte »).
 
@@ -57,7 +57,7 @@ Toute modification visuelle (mise en page, tailles, couleurs, typographie, rendu
 
 ## Documentation vivante
 
-Les textes écrits à la main recopient des valeurs de `config.js` : `desc` et `help` dans `content/catalog.js`, `CARDS` dans `content/texts.js`, `story` dans `content/levels.js`, les messages de `useCard`, les textes en dur de `render/panels.js` (« démarre à 300 », « si dispo ≥ 99 % ») et de `render/dialogs.js` (« −30 % pour la lenteur »), les indications de `index.html` et `loop/run.js`, le `README.md`. Quand une valeur change, on met ces textes à jour dans le même changement. Un hook Stop le vérifie.
+Les textes écrits à la main recopient des valeurs de `config.js` : `desc` et `help` dans `content/catalog.js`, `CARDS` et `MSGS` (messages de `useCard`) dans `content/texts.js`, `story` dans `content/levels.js`, `UI` dans `content/ui.js` (« démarre à 300 », « si dispo ≥ 99 % », « −30 % pour la lenteur »), le `README.md`. Chacun existe en anglais et en français : quand une valeur change, on met à jour les deux langues dans le même changement. Un hook Stop le vérifie.
 
 ## Comportement
 

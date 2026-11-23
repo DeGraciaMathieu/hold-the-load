@@ -8,7 +8,6 @@ import {
   AUTO_INSTANCE_CAP, AUTO_BOOT, AUTO_UP_AFTER, AUTO_DOWN_UTIL, AUTO_DOWN_AFTER, AUTO_DOWN_RESET,
 } from '../../config.js';
 import { CLASSES } from '../../content/catalog.js';
-import { REGION_NAMES } from '../../content/texts.js';
 import { srvLat, dbLat } from '../latency.js';
 import { addReason } from '../stats.js';
 import { evActive, receiversOf } from './make.js';
@@ -41,12 +40,12 @@ function fireEvents(S) {
     S.fired[k] = true;
     if (e.type === 'crash') {
       const f = S.fixed[e.target || 0];
-      if (f && f.alive) { S.crashK = receiversOf(S).length; f.alive = false; S.crashT = t; S.log.push({ t, msg: 'Serveur ' + 'ABCDE'[e.target || 0] + ' hors service' }); }
+      if (f && f.alive) { S.crashK = receiversOf(S).length; f.alive = false; S.crashT = t; S.log.push({ t, msg: { k: 'srvDown', p: { s: 'ABCDE'[e.target || 0] } } }); }
     } else if (e.type === 'cacheFlush') {
-      if (S.cache) { S.coldStart = t; S.log.push({ t, msg: 'Redis redémarre : cache vide' }); }
+      if (S.cache) { S.coldStart = t; S.log.push({ t, msg: { k: 'cacheFlush' } }); }
     } else if (e.type === 'regionDown') {
       if (e.region === 'primary') e = { ...e, region: S.primary ? S.primary.region : 'eu' };
-      S.log.push({ t, msg: 'Panne de la région ' + REGION_NAMES[e.region] });
+      S.log.push({ t, msg: { k: 'regionDown', p: { r: e.region } } });
       S.bricks.forEach(b => { if (b.region === e.region) b.alive = false; });
       S.fixed.forEach(f => { if (f.region === e.region) f.alive = false; });
       S.temps.forEach(f => { if (f.region === e.region) f.alive = false; });
@@ -55,7 +54,7 @@ function fireEvents(S) {
       if (S.queue && !S.queue.alive) { const lost = S.backlog.write + S.backlog.pay; S.acc.ok -= lost; S.acc.fail += lost; addReason(S.acc.reasons, 'queueLost', lost); S.backlog.write = 0; S.backlog.pay = 0; }
       if (S.cache && !S.cache.alive) S.coldStart = null;
     } else if (e.type === 'legacyShutdown') {
-      if (S.primary && S.primary.brick.opts.legacy) { S.primary.alive = false; S.log.push({ t, msg: 'L’ancienne base est éteinte' }); }
+      if (S.primary && S.primary.brick.opts.legacy) { S.primary.alive = false; S.log.push({ t, msg: { k: 'legacyOff' } }); }
     }
   });
 }

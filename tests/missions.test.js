@@ -17,7 +17,7 @@ test('chaque mission a une solution de référence', () => {
 for (const lv of LEVELS) {
   const ref = SOLUTIONS[lv.id];
   if (!ref) continue;
-  test(`« ${lv.title} » se gagne en trois étoiles pour ${ref.cost} €`, () => {
+  test(`« ${lv.title.fr} » se gagne en trois étoiles pour ${ref.cost} €`, () => {
     const res = runAll(lv, fill(ref.board), ref.settings, ref.actions);
     const met = goalsMet(lv, res);
     assert.ok(met.win, `objectifs : ${JSON.stringify(met)}, dispo ${res.avail.toFixed(2)} %, p95 ${Math.round(res.p95)} ms`);

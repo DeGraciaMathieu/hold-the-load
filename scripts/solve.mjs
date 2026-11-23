@@ -8,6 +8,7 @@
 // Les briques et réglages sans effet sur la mission sont écartés (pare-feu sans attaque, disjoncteur sans paiements…).
 import { LEVELS } from '../src/content/levels.js';
 import { CATALOG, GLOBAL } from '../src/content/catalog.js';
+import { tr } from '../src/content/texts.js';
 import { runAll } from '../src/rules/sim/result.js';
 import { goalsMet } from '../src/rules/goals.js';
 import { layoutCost } from '../src/rules/layout.js';
@@ -143,7 +144,7 @@ if (args.includes('--json')) { console.log(JSON.stringify({ id: lv.id, budget, c
 const REG = { eu: 'Paris', us: 'New York', asia: 'Tokyo' };
 function label(b) {
   const o = b.opts || {};
-  let s = CATALOG[b.type].name;
+  let s = tr(CATALOG[b.type].name, 'fr');
   if (b.type === 'server') s += ' ' + SIZE_NAMES[o.size];
   if (b.type === 'lb' && o.algo && o.algo !== 'rr') s += ' ' + { sticky: 'sticky', least: 'moins chargé' }[o.algo];
   if (b.type === 'waf' && o.mode === 'strict') s += ' strict';
@@ -161,7 +162,7 @@ const contains = (big, small) => { const m = {}; big.forEach(x => (m[x] = (m[x] 
 const picks = [];
 for (const p of passes) if (!picks.some(q => contains(bag(p), bag(q)))) picks.push(p);
 
-console.log(`${lv.id} · ${lv.title} · budget ${lv.goals.budget ?? '—'} € · ${cands.length} infras sous ${budget} €, ${sims} parties${stopped ? ' (arrêt à --max : une solution moins chère reste possible)' : ''}`);
+console.log(`${lv.id} · ${lv.title.fr} · budget ${lv.goals.budget ?? '—'} € · ${cands.length} infras sous ${budget} €, ${sims} parties${stopped ? ' (arrêt à --max : une solution moins chère reste possible)' : ''}`);
 if (!picks.length) console.log('Aucune infra trois étoiles trouvée.');
 for (const p of picks.slice(0, 6)) {
   const st = [p.settings.retries && p.settings.retries + ' nouvel(s) essai(s)', p.settings.timeout === 'court' && 'timeout 0,8 s', p.settings.shed && 'délestage'].filter(Boolean);

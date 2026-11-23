@@ -11,7 +11,8 @@ export function bindInput(on) {
     on.hover(e.clientX - rect.left, e.clientY - rect.top);
   });
   board.addEventListener('pointerleave', () => on.hover(null));
-  document.querySelectorAll('.tab').forEach(t => (t.onclick = () => on.tab(t.dataset.m)));
+  document.querySelectorAll('#tabs .tab').forEach(t => (t.onclick = () => on.tab(t.dataset.m)));
+  document.querySelectorAll('#langs .tab').forEach(t => (t.onclick = () => on.lang(t.dataset.l)));
   document.getElementById('run').onclick = on.run;
   document.getElementById('speed').onclick = on.speed;
   document.getElementById('scrim').onclick = on.scrim;

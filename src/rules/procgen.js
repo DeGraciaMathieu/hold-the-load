@@ -3,7 +3,6 @@ import {
   GEN_DURATION, GEN_EVENT_FROM, GEN_EVENT_TO, GEN_INCIDENT_LENGTH, GEN_API_SLOW_LAT, GEN_ATTACK_MULT,
   GEN_SPIKE_LENGTH, GEN_SPIKE_K, GEN_RUSH_LENGTH, GEN_RUSH_READS_KEPT, GEN_RUSH_READS_TO_WRITE,
 } from '../config.js';
-import { EVENT_NAMES } from '../content/texts.js';
 import { mixOf, wave } from '../content/levels.js';
 
 // Générateur pseudo-aléatoire à graine (xorshift sur un hash FNV-1a) : même graine, même niveau.
@@ -40,7 +39,7 @@ export function genLevel(R, round, opts = {}) {
   for (let k = 0; k < nEv; k++) {
     const type = pick(evPool.filter(x => !used.has(x))); if (!type) break; used.add(type);
     const t = Math.round(between(GEN_EVENT_FROM, GEN_EVENT_TO));
-    tags.push(EVENT_NAMES[type] + ' vers ' + t + ' s');
+    tags.push([type, t]);
     if (type === 'crash') events.push({ type, t, target: 0 });
     if (type === 'cacheFlush') events.push({ type, t });
     if (type === 'apiSlow') events.push({ type, from: t, to: t + GEN_INCIDENT_LENGTH, lat: GEN_API_SLOW_LAT });
@@ -54,21 +53,20 @@ export function genLevel(R, round, opts = {}) {
   const mixFix = mixOf(m);
   const mix = rush ? (t => (t >= rush.from && t < rush.to ? mixOf({ ...m, read: m.read * GEN_RUSH_READS_KEPT, write: m.write + m.read * GEN_RUSH_READS_TO_WRITE }) : mixFix)) : mixFix;
   const lvl = {
-    id: opts.id || 'gen' + round, title: opts.title || 'Tour ' + round, bricks, sizes: has('autoscale') || opts.all,
+    id: opts.id || 'gen' + round, title: opts.title || { k: 'genTitle', p: { n: round } }, bricks, sizes: has('autoscale') || opts.all,
     settingsAllowed: has('breaker') ? ['timeout', 'retries', 'shed'] : [],
     rps, duration, mix, profile, events, regions,
     logged: has('cache') ? 0.5 : 0, fresh: has('replica') ? 0.2 : 0,
     cards: round >= 3 || opts.all ? { [pick(['addServer', 'restart', ...(has('autoscale') ? ['prewarm'] : []), ...(m.reco ? ['degrade'] : []), ...(has('waf') ? ['waf'] : []), ...(has('replica') ? ['promote'] : [])])]: 1 } : {},
     goals: { avail: 99, p95: (opts.p95 || 200) + (regions ? 50 : 0), budget: null },
-    story: rps.toLocaleString('fr-FR') + ' req/s' + (m.static ? ', ' + Math.round(m.static * 100) + ' % de statique' : '') + (m.pay ? ', ' + Math.round(m.pay * 100) + ' % de paiements' : '') +
-      (m.reco ? ', ' + Math.round(m.reco * 100) + ' % de recos' : '') + (m.upload ? ', des uploads' : '') + (regions ? ', clients à Paris et New York' : '') + '. ' +
-      (tags.length ? 'Au programme : ' + tags.join(', ') + '.' : 'Pas d’incident prévu.'),
+    // récit rédigé au rendu (MSGS.genStory, content/texts.js)
+    story: { k: 'genStory', p: { rps, static: Math.round(m.static * 100), pay: Math.round(m.pay * 100), reco: Math.round(m.reco * 100), upload: m.upload > 0, regions: !!regions, tags } },
   };
   return lvl;
 }
 
 export function dailyLevel(dateStr) {
   const R = rng('tlc-' + dateStr);
-  const lv = genLevel(R, 7, { all: true, rps: 800 + Math.round(R() * 16) * 100, id: 'daily-' + dateStr, title: 'Défi du ' + dateStr.split('-').reverse().slice(0, 2).join('/'), p95: 180 });
+  const lv = genLevel(R, 7, { all: true, rps: 800 + Math.round(R() * 16) * 100, id: 'daily-' + dateStr, title: { k: 'dailyTitle', p: { d: dateStr } }, p95: 180 });
   return lv;
 }
